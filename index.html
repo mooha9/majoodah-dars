@@ -198,9 +198,16 @@ $("#gen").addEventListener("click",function(){var m=$("#genMsg");m.className="ms
  var n=need();if(n>0&&n>CR){err("رصيدك "+AN(CR)+" ويحتاج الدرس "+AN(n)+". اشحن رصيدك أولاً");$("#topup").scrollIntoView({behavior:"smooth"});return}
  var ov=document.createElement("div");ov.className="overlay";ov.innerHTML='<div class="card"><div class="spin"></div><h3 style="font-size:18px">نجهّز درسك…</h3><p class="note" id="ph">'+PH[0]+'</p><p class="note">يأخذ عادةً من نص دقيقة إلى دقيقتين. لا تقفل الصفحة.</p></div>';document.body.appendChild(ov);
  var k=0,t=setInterval(function(){k=Math.min(PH.length-1,k+1);var p=document.getElementById("ph");if(p)p.textContent=PH[k]},9000);
- post("/generate",b).then(function(j){clearInterval(t);ov.remove();if(j.credits!=null)setBal(j.credits);
+ pdfToImgs(b).then(function(b){return post("/generate",b)}).then(function(j){clearInterval(t);ov.remove();if(j.credits!=null)setBal(j.credits);
   if(j.error){err(j._s===402?("رصيدك ما يكفي: يحتاج "+AN(j.need||0)+" وعندك "+AN(j.credits||0)):j.error);return}
   IMGS=[];DOC=null;renderThumbs();$("#fileInfo").textContent="";$("#txt").value="";$("#url").value="";toast("جهز الدرس ✓");loadLib();location.href="l/?id="+encodeURIComponent(j.id)+"&t=1"+AQ})});
+/* صفحات PDF تُحوَّل لصور في المتصفح ليقص الخادم منها صور الكتاب ورسومه */
+function loadPdfJs(){if(window.pdfjsLib)return Promise.resolve();return new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=function(){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";res()};s.onerror=rej;document.head.appendChild(s)})}
+function pdfToImgs(b){if(b.kind!=="pdf"||!DOC||!DOC.buf)return Promise.resolve(b);var d=DOC,ph=document.getElementById("ph");if(ph)ph.textContent="أقرأ صفحات الملف…";
+ return loadPdfJs().then(function(){return pdfjsLib.getDocument({data:new Uint8Array(d.buf.slice(0))}).promise}).then(function(pdf){var out=[],i=d.from;
+  function next(){if(i>d.to)return out;return pdf.getPage(i).then(function(pg){var v=pg.getViewport({scale:1}),sc=Math.min(2.5,1500/v.width),vp=pg.getViewport({scale:sc}),c=document.createElement("canvas");c.width=Math.round(vp.width);c.height=Math.round(vp.height);var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);
+   return pg.render({canvasContext:x,viewport:vp}).promise.then(function(){out.push(c.toDataURL("image/jpeg",.8));i++;return next()})})}
+  return next()}).then(function(imgs){if(!imgs||!imgs.length)return b;var nb={};for(var k in b)if(k!=="pdf")nb[k]=b[k];nb.kind="images";nb.images=imgs;return nb}).catch(function(){return b})}
 function err(s){var m=$("#genMsg");m.className="msg err";m.textContent=s}
 /* ===== الشحن ===== */
 $("#redeem").addEventListener("click",function(){var m=$("#redMsg"),v=$("#codes").value;if(!/DRS/i.test(v)){m.className="msg err";m.textContent="الصق الأكواد اللي تبدأ بـ DRS";return}

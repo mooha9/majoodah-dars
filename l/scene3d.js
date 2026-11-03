@@ -29,7 +29,9 @@ const sunL=new THREE.DirectionalLight(0xfff2dc,2.2);sunL.position.set(7,12,6);su
 {const s=sunL.shadow.camera;s.left=-11;s.right=11;s.top=11;s.bottom=-11;s.near=1;s.far=45}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=0.03;scene.add(sunL);
 
 const C=new OrbitControls(camera,R.domElement);C.enableDamping=true;C.autoRotate=true;C.autoRotateSpeed=0.7;C.target.set(0,1.5,0);C.minDistance=2.5;C.maxDistance=40;
-R.domElement.addEventListener("pointerdown",()=>C.autoRotate=false);
+const SW={on:false,user:false,base:0};R.domElement.addEventListener("pointerdown",()=>{C.autoRotate=false;SW.user=true});
+// للمجسمات المقطوعة: تمايل هادئ يبقي المقطع الداخلي مواجهاً للطالب بدل الدوران الكامل
+function sway(){if(SW.on)return;SW.on=true;C.autoRotate=false;const o=camera.position.clone().sub(C.target);SW.base=Math.atan2(o.x,o.z)}
 
 const comp=new EffectComposer(R);comp.setPixelRatio(Math.min(1.5,PR));comp.addPass(new RenderPass(scene,camera));
 const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),0.45,0.4,1.0);comp.addPass(bloom);comp.addPass(new OutputPass());
@@ -103,6 +105,7 @@ const SH={a:0,t:0};
 function shake(a,sec){SH.a=Math.max(SH.a*(SH.t>0?1:0),+a||.1);SH.t=Math.max(SH.t,+sec||1)}
 const FOC={k:1};
 function focus(x,y,z,dist){const tg=V(x,y,z),from=camera.position.clone(),t0=C.target.clone();const dir=from.clone().sub(t0).normalize();const to=tg.clone().add(dir.multiplyScalar(dist||camera.position.distanceTo(C.target)));FOC.k=0;FOC.f=(k)=>{const e=ease(k);C.target.lerpVectors(t0,tg,e);camera.position.lerpVectors(from,to,e)};C.autoRotate=false}
+onFrame((t,dt)=>{if(SW.on&&!SW.user&&FOC.k>=1){const o=camera.position.clone().sub(C.target),r=Math.hypot(o.x,o.z),th=SW.base+.42*Math.sin(t*.35);camera.position.set(C.target.x+r*Math.sin(th),camera.position.y,C.target.z+r*Math.cos(th))}});
 onFrame((t,dt)=>{if(FOC.k<1){FOC.k=Math.min(1,FOC.k+dt/1.2);FOC.f(FOC.k)}});
 
 // ---------- أرض ----------
@@ -175,7 +178,7 @@ function volcano(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0
  const chY=-1.75;let chamber=null,conduit=null;
  if(under){const sideT=strataTex(["#b39a74","#8e7458","#7a6450","#5f5048","#4d4140"]);const topM=mat("#a8946e",{roughness:.95});const sm=mat("#ffffff",{map:sideT,roughness:.95});const ms=[sm,sm,topM,sm,sm,sm];
   const box=(w,dd,x,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,DP,dd),ms);m.position.set(x,-DP/2-.001,z);m.receiveShadow=true;g.add(m)};
-  if(cut){box(2*S,S,0,-S/2);box(S,S,-S/2,S/2);HOLES.push(1);GR.forEach(m=>m.visible=false);const fl=new THREE.Mesh(new THREE.CircleGeometry(S*2.2,64),mat("#d9d2c2",{roughness:1}));fl.rotation.x=-Math.PI/2;fl.position.y=-DP-.02;fl.receiveShadow=true;g.add(fl)}else box(2*S,2*S,0,0);
+  if(cut){box(2*S,S,0,-S/2);box(S,S,-S/2,S/2);HOLES.push(1);sway();GR.forEach(m=>m.visible=false);const fl=new THREE.Mesh(new THREE.CircleGeometry(S*2.2,64),mat("#d9d2c2",{roughness:1}));fl.rotation.x=-Math.PI/2;fl.position.y=-DP-.02;fl.receiveShadow=true;g.add(fl)}else box(2*S,2*S,0,0);
   chamber=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),glowMat("#ff4a10",1.2));chamber.scale.set(1.5,.62,1.5);chamber.position.y=chY;g.add(chamber);
   const cl=H-.38-chY;conduit=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,cl,20),glowMat("#ff5a14",1.3));conduit.position.y=chY+cl/2;g.add(conduit);
   const pl=new THREE.PointLight(0xff6a2a,cut?6:0,7,1.5);pl.position.set(1,-1.1,1);g.add(pl)}
@@ -240,7 +243,7 @@ function earthquake(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,
 // kit.earthLayers({pos,radius}) → {group, points:{crust,mantle,outerCore,innerCore}}
 function earthLayers(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,2,0]));put(g,o.parent);const Rr=o.radius||2.4;
  const tex=canvasTex(512,256,(gx,w,h)=>{const img=gx.createImageData(w,h),d=img.data;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const n=fbm(x/48+(x>w-48?0:0),y/40);const land=n>.52,lat=Math.abs(y/h-.5)*2;let c=land?(lat>.82?[240,244,246]:n>.62?[150,128,88]:[86,138,72]):[34,96,168];if(!land&&lat>.88)c=[230,238,242];const i=(y*w+x)*4;d[i]=c[0];d[i+1]=c[1];d[i+2]=c[2];d[i+3]=255}gx.putImageData(img,0,0)});
- const outer=new THREE.Mesh(new THREE.SphereGeometry(Rr,64,48,Math.PI,Math.PI*1.5),mat("#ffffff",{map:tex,roughness:.8,side:THREE.DoubleSide}));g.add(outer);
+ sway();const outer=new THREE.Mesh(new THREE.SphereGeometry(Rr,64,48,Math.PI,Math.PI*1.5),mat("#ffffff",{map:tex,roughness:.8,side:THREE.DoubleSide}));g.add(outer);
  const L=[{r:1,c:"#8b6b4a",e:0},{r:.9,c:"#e0652a",e:.5},{r:.55,c:"#f7a531",e:.6},{r:.22,c:"#ffd54a",e:1.1}];
  L.forEach((l,i)=>{const rin=(L[i+1]?L[i+1].r:0)*Rr,rout=l.r*Rr;const m=new THREE.MeshStandardMaterial({color:col(l.c),emissive:col(l.c),emissiveIntensity:l.e,roughness:.85,side:THREE.DoubleSide});
   const geo=new THREE.RingGeometry(Math.max(.001,rin),rout,96,1,-Math.PI/2,Math.PI);const a=new THREE.Mesh(geo,m),b=new THREE.Mesh(geo,m);b.rotation.y=-Math.PI/2;g.add(a,b)});

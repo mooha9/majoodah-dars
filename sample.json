@@ -3,34 +3,322 @@
  "subject": "العلوم",
  "grade": "الخامس الابتدائي",
  "summary": "ينتقل الماء بين الأرض والهواء في دورة مستمرة: يتبخر بحرارة الشمس، ويتكاثف سحباً، ثم يهطل مطراً، ويتجمع في البحار والأنهار والمياه الجوفية ليبدأ الدورة من جديد.",
- "objectives": ["أن يذكر الطالب مراحل دورة الماء بالترتيب.", "أن يفسّر الطالب دور الشمس في تبخر الماء.", "أن يميّز الطالب بين التبخر والتكاثف."],
- "vocabulary": [
-  {"term": "التبخر", "meaning": "تحوّل الماء من سائل إلى بخار بفعل الحرارة"},
-  {"term": "التكاثف", "meaning": "تحوّل بخار الماء إلى قطرات صغيرة عندما يبرد"},
-  {"term": "الهطول", "meaning": "سقوط الماء من السحب على شكل مطر أو برد أو ثلج"},
-  {"term": "المياه الجوفية", "meaning": "ماء يتسرب داخل التربة ويتجمع تحت سطح الأرض"}
+ "objectives": [
+  "أن يذكر الطالب مراحل دورة الماء بالترتيب.",
+  "أن يفسّر الطالب دور الشمس في تبخر الماء.",
+  "أن يميّز الطالب بين التبخر والتكاثف."
  ],
- "warmup": {"prompt": "تركت كأس ماء في الشمس يومين. وين راح الماء اللي نقص؟", "options": ["شربته النملة", "تبخّر إلى الهواء", "دخل في الكأس", "ما أدري"]},
+ "vocabulary": [
+  {
+   "term": "التبخر",
+   "meaning": "تحوّل الماء من سائل إلى بخار بفعل الحرارة"
+  },
+  {
+   "term": "التكاثف",
+   "meaning": "تحوّل بخار الماء إلى قطرات صغيرة عندما يبرد"
+  },
+  {
+   "term": "الهطول",
+   "meaning": "سقوط الماء من السحب على شكل مطر أو برد أو ثلج"
+  },
+  {
+   "term": "المياه الجوفية",
+   "meaning": "ماء يتسرب داخل التربة ويتجمع تحت سطح الأرض"
+  }
+ ],
+ "warmup": {
+  "prompt": "تركت كأس ماء في الشمس يومين. وين راح الماء اللي نقص؟",
+  "options": [
+   "شربته النملة",
+   "تبخّر إلى الهواء",
+   "دخل في الكأس",
+   "ما أدري"
+  ]
+ },
  "slides": [
-  {"title": "الماء لا يختفي!", "bullets": ["كمية الماء على الأرض ثابتة تقريباً", "الماء ينتقل بين البحار والهواء واليابسة", "هذا الانتقال المستمر اسمه دورة الماء"], "example": "قطرة المطر اللي نزلت اليوم ممكن كانت في البحر قبل أسبوع.", "teacher_note": "اربط بسؤال التهيئة: الماء لم يختفِ بل غيّر حالته."},
-  {"title": "١. التبخر", "bullets": ["حرارة الشمس تسخّن ماء البحار والأنهار", "يتحول الماء من سائل إلى بخار غير مرئي", "يصعد البخار إلى أعلى في الهواء"], "example": "الملابس المبلولة تجف تحت الشمس.", "teacher_note": "اسأل: ليش تجف الملابس أسرع في الصيف؟"},
-  {"title": "٢. التكاثف", "bullets": ["كلما صعد البخار برد الهواء حوله", "يتحول البخار إلى قطرات ماء صغيرة جداً", "تتجمع القطرات فتتكوّن السحب"], "example": "قطرات الماء على كأس بارد من الخارج.", "teacher_note": "جرّب أمامهم: كأس فيه ثلج وراقبوا جداره."},
-  {"title": "٣. الهطول", "bullets": ["تكبر القطرات في السحب وتثقل", "تسقط على الأرض مطراً أو برداً أو ثلجاً"], "example": "أمطار الشتاء في منطقتك.", "teacher_note": ""},
-  {"title": "٤. التجمع", "bullets": ["يجري ماء المطر في الأودية والأنهار إلى البحار", "جزء منه يتسرب في التربة ويصير مياهاً جوفية", "ثم تبدأ الدورة من جديد"], "example": "مياه الآبار في المملكة من المياه الجوفية.", "teacher_note": "اختم بربط المياه الجوفية بأهمية ترشيد الاستهلاك."}
+  {
+   "title": "الماء لا يختفي!",
+   "bullets": [
+    "كمية الماء على الأرض ثابتة تقريباً",
+    "الماء ينتقل بين البحار والهواء واليابسة",
+    "هذا الانتقال المستمر اسمه دورة الماء"
+   ],
+   "example": "قطرة المطر اللي نزلت اليوم ممكن كانت في البحر قبل أسبوع.",
+   "teacher_note": "اربط بسؤال التهيئة: الماء لم يختفِ بل غيّر حالته.",
+   "formula": "",
+   "margin_note": "",
+   "predict": {
+    "question": "",
+    "options": [],
+    "answer_index": -1,
+    "reveal": ""
+   }
+  },
+  {
+   "title": "١. التبخر",
+   "bullets": [
+    "حرارة الشمس تسخّن ماء البحار والأنهار",
+    "يتحول الماء من سائل إلى بخار غير مرئي",
+    "يصعد البخار إلى أعلى في الهواء"
+   ],
+   "example": "الملابس المبلولة تجف تحت الشمس.",
+   "teacher_note": "اسأل: ليش تجف الملابس أسرع في الصيف؟",
+   "formula": "",
+   "margin_note": "التبخر = سائل ← بخار بالحرارة 🔥",
+   "predict": {
+    "question": "لو حطينا صحنين ماء: واحد في الشمس وواحد في الظل، أيهم يجف أسرع؟",
+    "options": [
+     "اللي في الشمس",
+     "اللي في الظل",
+     "يجفون بنفس الوقت"
+    ],
+    "answer_index": 0,
+    "reveal": "الحرارة تزيد سرعة التبخر، فالماء في الشمس يتبخر أسرع."
+   }
+  },
+  {
+   "title": "٢. التكاثف",
+   "bullets": [
+    "كلما صعد البخار برد الهواء حوله",
+    "يتحول البخار إلى قطرات ماء صغيرة جداً",
+    "تتجمع القطرات فتتكوّن السحب"
+   ],
+   "example": "قطرات الماء على كأس بارد من الخارج.",
+   "teacher_note": "جرّب أمامهم: كأس فيه ثلج وراقبوا جداره.",
+   "formula": "",
+   "margin_note": "",
+   "predict": {
+    "question": "",
+    "options": [],
+    "answer_index": -1,
+    "reveal": ""
+   }
+  },
+  {
+   "title": "٣. الهطول",
+   "bullets": [
+    "تكبر القطرات في السحب وتثقل",
+    "تسقط على الأرض مطراً أو برداً أو ثلجاً"
+   ],
+   "example": "أمطار الشتاء في منطقتك.",
+   "teacher_note": "",
+   "formula": "",
+   "margin_note": "",
+   "predict": {
+    "question": "",
+    "options": [],
+    "answer_index": -1,
+    "reveal": ""
+   }
+  },
+  {
+   "title": "٤. التجمع",
+   "bullets": [
+    "يجري ماء المطر في الأودية والأنهار إلى البحار",
+    "جزء منه يتسرب في التربة ويصير مياهاً جوفية",
+    "ثم تبدأ الدورة من جديد"
+   ],
+   "example": "مياه الآبار في المملكة من المياه الجوفية.",
+   "teacher_note": "اختم بربط المياه الجوفية بأهمية ترشيد الاستهلاك.",
+   "formula": "",
+   "margin_note": "",
+   "predict": {
+    "question": "",
+    "options": [],
+    "answer_index": -1,
+    "reveal": ""
+   }
+  }
  ],
  "activities": [
-  {"type": "order", "title": "رتّب المراحل", "instruction": "اضغط على المراحل بالترتيب الصحيح", "question": "", "options": [], "answer_index": -1, "statements": [], "pairs": [], "items": ["التبخر", "التكاثف", "الهطول", "التجمع"], "sentence": "", "groups": []},
-  {"type": "match", "title": "وصّل المصطلح بمعناه", "instruction": "اختر المصطلح ثم معناه", "question": "", "options": [], "answer_index": -1, "statements": [], "pairs": [{"left": "التبخر", "right": "سائل يتحول إلى بخار"}, {"left": "التكاثف", "right": "بخار يتحول إلى قطرات"}, {"left": "الهطول", "right": "سقوط الماء من السحب"}, {"left": "المياه الجوفية", "right": "ماء تحت سطح الأرض"}], "items": [], "sentence": "", "groups": []},
-  {"type": "tf", "title": "صح أو خطأ", "instruction": "حدد صحة كل عبارة", "question": "", "options": [], "answer_index": -1, "statements": [{"text": "الشمس هي مصدر الحرارة في التبخر", "is_true": true}, {"text": "السحب مكوّنة من دخان", "is_true": false}, {"text": "كمية الماء على الأرض تنقص كل سنة بشكل كبير", "is_true": false}, {"text": "جزء من ماء المطر يتسرب إلى باطن الأرض", "is_true": true}], "pairs": [], "items": [], "sentence": "", "groups": []},
-  {"type": "fill", "title": "أكمل الفراغ", "instruction": "اختر الكلمة المناسبة", "question": "", "options": ["التكاثف", "التبخر", "الهطول"], "answer_index": 0, "statements": [], "pairs": [], "items": [], "sentence": "تحوّل بخار الماء إلى قطرات عندما يبرد يسمى ___.", "groups": []},
-  {"type": "sort", "title": "صنّف", "instruction": "حدد مكان كل مثال", "question": "", "options": [], "answer_index": -1, "statements": [], "pairs": [], "items": [], "sentence": "", "groups": [{"name": "تبخر", "items": ["جفاف الملابس", "نقص ماء الكأس في الشمس"]}, {"name": "تكاثف", "items": ["قطرات على كأس بارد", "ضباب على المرآة بعد الاستحمام"]}]}
+  {
+   "type": "order",
+   "title": "رتّب المراحل",
+   "instruction": "اضغط على المراحل بالترتيب الصحيح",
+   "question": "",
+   "options": [],
+   "answer_index": -1,
+   "statements": [],
+   "pairs": [],
+   "items": [
+    "التبخر",
+    "التكاثف",
+    "الهطول",
+    "التجمع"
+   ],
+   "sentence": "",
+   "groups": []
+  },
+  {
+   "type": "match",
+   "title": "وصّل المصطلح بمعناه",
+   "instruction": "اختر المصطلح ثم معناه",
+   "question": "",
+   "options": [],
+   "answer_index": -1,
+   "statements": [],
+   "pairs": [
+    {
+     "left": "التبخر",
+     "right": "سائل يتحول إلى بخار"
+    },
+    {
+     "left": "التكاثف",
+     "right": "بخار يتحول إلى قطرات"
+    },
+    {
+     "left": "الهطول",
+     "right": "سقوط الماء من السحب"
+    },
+    {
+     "left": "المياه الجوفية",
+     "right": "ماء تحت سطح الأرض"
+    }
+   ],
+   "items": [],
+   "sentence": "",
+   "groups": []
+  },
+  {
+   "type": "tf",
+   "title": "صح أو خطأ",
+   "instruction": "حدد صحة كل عبارة",
+   "question": "",
+   "options": [],
+   "answer_index": -1,
+   "statements": [
+    {
+     "text": "الشمس هي مصدر الحرارة في التبخر",
+     "is_true": true
+    },
+    {
+     "text": "السحب مكوّنة من دخان",
+     "is_true": false
+    },
+    {
+     "text": "كمية الماء على الأرض تنقص كل سنة بشكل كبير",
+     "is_true": false
+    },
+    {
+     "text": "جزء من ماء المطر يتسرب إلى باطن الأرض",
+     "is_true": true
+    }
+   ],
+   "pairs": [],
+   "items": [],
+   "sentence": "",
+   "groups": []
+  },
+  {
+   "type": "fill",
+   "title": "أكمل الفراغ",
+   "instruction": "اختر الكلمة المناسبة",
+   "question": "",
+   "options": [
+    "التكاثف",
+    "التبخر",
+    "الهطول"
+   ],
+   "answer_index": 0,
+   "statements": [],
+   "pairs": [],
+   "items": [],
+   "sentence": "تحوّل بخار الماء إلى قطرات عندما يبرد يسمى ___.",
+   "groups": []
+  },
+  {
+   "type": "sort",
+   "title": "صنّف",
+   "instruction": "حدد مكان كل مثال",
+   "question": "",
+   "options": [],
+   "answer_index": -1,
+   "statements": [],
+   "pairs": [],
+   "items": [],
+   "sentence": "",
+   "groups": [
+    {
+     "name": "تبخر",
+     "items": [
+      "جفاف الملابس",
+      "نقص ماء الكأس في الشمس"
+     ]
+    },
+    {
+     "name": "تكاثف",
+     "items": [
+      "قطرات على كأس بارد",
+      "ضباب على المرآة بعد الاستحمام"
+     ]
+    }
+   ]
+  }
  ],
  "quiz": [
-  {"question": "ما مصدر الطاقة الذي يحرّك دورة الماء؟", "options": ["القمر", "الشمس", "الرياح", "البراكين"], "answer_index": 1, "explanation": "حرارة الشمس تبخّر الماء فتبدأ الدورة."},
-  {"question": "ماذا يحدث لبخار الماء عندما يبرد في الأعلى؟", "options": ["يتبخر أكثر", "يتكاثف إلى قطرات", "يختفي", "يتحول إلى رمل"], "answer_index": 1, "explanation": "التبريد يحوّل البخار إلى قطرات تكوّن السحب."},
-  {"question": "أي مما يلي مثال على الهطول؟", "options": ["البرد", "الضباب على المرآة", "جفاف الملابس", "غليان الماء"], "answer_index": 0, "explanation": "البرد ماء يسقط من السحب."},
-  {"question": "من أين تأتي مياه الآبار؟", "options": ["من السحب مباشرة", "من المياه الجوفية", "من الهواء", "من الملح"], "answer_index": 1, "explanation": "ماء المطر يتسرب في التربة ويتجمع مياهاً جوفية."},
-  {"question": "الترتيب الصحيح لدورة الماء:", "options": ["هطول ← تبخر ← تجمع ← تكاثف", "تبخر ← تكاثف ← هطول ← تجمع", "تكاثف ← تبخر ← تجمع ← هطول", "تجمع ← هطول ← تكاثف ← تبخر"], "answer_index": 1, "explanation": "تبخر ثم تكاثف ثم هطول ثم تجمع، وتتكرر."}
+  {
+   "question": "ما مصدر الطاقة الذي يحرّك دورة الماء؟",
+   "options": [
+    "القمر",
+    "الشمس",
+    "الرياح",
+    "البراكين"
+   ],
+   "answer_index": 1,
+   "explanation": "حرارة الشمس تبخّر الماء فتبدأ الدورة."
+  },
+  {
+   "question": "ماذا يحدث لبخار الماء عندما يبرد في الأعلى؟",
+   "options": [
+    "يتبخر أكثر",
+    "يتكاثف إلى قطرات",
+    "يختفي",
+    "يتحول إلى رمل"
+   ],
+   "answer_index": 1,
+   "explanation": "التبريد يحوّل البخار إلى قطرات تكوّن السحب."
+  },
+  {
+   "question": "أي مما يلي مثال على الهطول؟",
+   "options": [
+    "البرد",
+    "الضباب على المرآة",
+    "جفاف الملابس",
+    "غليان الماء"
+   ],
+   "answer_index": 0,
+   "explanation": "البرد ماء يسقط من السحب."
+  },
+  {
+   "question": "من أين تأتي مياه الآبار؟",
+   "options": [
+    "من السحب مباشرة",
+    "من المياه الجوفية",
+    "من الهواء",
+    "من الملح"
+   ],
+   "answer_index": 1,
+   "explanation": "ماء المطر يتسرب في التربة ويتجمع مياهاً جوفية."
+  },
+  {
+   "question": "الترتيب الصحيح لدورة الماء:",
+   "options": [
+    "هطول ← تبخر ← تجمع ← تكاثف",
+    "تبخر ← تكاثف ← هطول ← تجمع",
+    "تكاثف ← تبخر ← تجمع ← هطول",
+    "تجمع ← هطول ← تكاثف ← تبخر"
+   ],
+   "answer_index": 1,
+   "explanation": "تبخر ثم تكاثف ثم هطول ثم تجمع، وتتكرر."
+  }
  ],
- "exit_ticket": "اشرح بجملتين: كيف يمكن لقطرة ماء من البحر أن تصل إلى بئر في مزرعتكم؟"
+ "exit_ticket": "اشرح بجملتين: كيف يمكن لقطرة ماء من البحر أن تصل إلى بئر في مزرعتكم؟",
+ "scenes": [
+  {
+   "slide_index": 0,
+   "title": "دورة الماء",
+   "caption": "شاهد بخار الماء يصعد من البحر، ويتكاثف سحاباً، ثم يهطل مطراً على اليابسة.",
+   "code": "\nconst sea=new THREE.Mesh(new THREE.BoxGeometry(6,0.4,6),new THREE.MeshStandardMaterial({color:0x2f86c9,roughness:.3}));sea.position.set(-1.5,0,0);scene.add(sea);\nconst land=new THREE.Mesh(new THREE.BoxGeometry(4,0.8,6),new THREE.MeshStandardMaterial({color:0x8a6a3d}));land.position.set(3.5,0.2,0);scene.add(land);\nconst hill=new THREE.Mesh(new THREE.ConeGeometry(1.4,2.2,24),new THREE.MeshStandardMaterial({color:0x5f9a4a}));hill.position.set(3.8,1.7,0);scene.add(hill);\nconst sun=new THREE.Mesh(new THREE.SphereGeometry(0.8,32,16),new THREE.MeshStandardMaterial({color:0xffc83d,emissive:0xffa000,emissiveIntensity:.8}));sun.position.set(-4.5,6,-2);scene.add(sun);\nconst cloud=new THREE.Group();[[0,0,0,.9],[.8,.1,0,.7],[-.8,0,.1,.7],[.3,.4,0,.6]].forEach(([x,y,z,r])=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,20,12),new THREE.MeshStandardMaterial({color:0xf4f7f9}));m.position.set(x,y,z);cloud.add(m)});cloud.position.set(1.5,5,0);scene.add(cloud);\nconst N=120,vp=new Float32Array(N*3);for(let i=0;i<N;i++){vp[i*3]=-3.5+Math.random()*4;vp[i*3+1]=Math.random()*4.5;vp[i*3+2]=-2+Math.random()*4}\nconst vg=new THREE.BufferGeometry();vg.setAttribute('position',new THREE.BufferAttribute(vp,3));const vapor=new THREE.Points(vg,new THREE.PointsMaterial({color:0xffffff,size:.12,transparent:true,opacity:.75}));scene.add(vapor);\nconst M=90,rp=new Float32Array(M*3);for(let i=0;i<M;i++){rp[i*3]=2.4+Math.random()*2.2;rp[i*3+1]=Math.random()*4.5;rp[i*3+2]=-1+Math.random()*2}\nconst rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(rp,3));scene.add(new THREE.Points(rg,new THREE.PointsMaterial({color:0x5fb6ff,size:.1})));\naddLabel('التبخر',-1.5,3,1.5);addLabel('التكاثف',1.5,6.2,0);addLabel('الهطول',3.4,3.2,1.2);addLabel('التجمع',0,0.6,2.6);addLabel('الشمس',-4.5,7.2,-2);\nonFrame((t,dt)=>{const a=vg.attributes.position;for(let i=0;i<N;i++){let y=a.getY(i)+dt*1.2;if(y>4.6)y=0.3;a.setY(i,y)}a.needsUpdate=true;\nconst b=rg.attributes.position;for(let i=0;i<M;i++){let y=b.getY(i)-dt*3;if(y<0.6)y=4.5;b.setY(i,y)}b.needsUpdate=true;cloud.position.x=1.5+Math.sin(t*.5)*.3});\n"
+  }
+ ]
 }

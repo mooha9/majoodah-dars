@@ -44,6 +44,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .f textarea{min-height:150px;resize:vertical}
 .go{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
 .go .btn.primary{font-size:16px;padding:11px 24px}
+.prange{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;color:var(--ink)}.prange input{width:64px;padding:5px 8px;border:1px solid var(--line);border-radius:9px;font:inherit;text-align:center}.prange small{flex-basis:100%;color:var(--muted)}
 .note{font-size:13px;color:var(--muted)}
 .msg{font-size:14px;margin-top:8px}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
 .lib-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 12px}
@@ -171,9 +172,16 @@ function words(t){return String(t||"").trim().split(/\s+/).filter(Boolean).lengt
 function pdfPages(buf){var s="",u=new Uint8Array(buf);for(var i=0;i<u.length;i+=65536)s+=String.fromCharCode.apply(null,u.subarray(i,i+65536));var m=s.match(/\/Type\s*\/Page(?![s\w])/g);return Math.max(1,m?m.length:1)}
 function readDoc(f){var info=$("#fileInfo");info.className="msg";
  if(/\.pdf$/i.test(f.name)||f.type==="application/pdf"){if(f.size>25e6){info.className="msg err";info.textContent="الملف أكبر من ٢٥ ميجا";return}
-  var r=new FileReader();r.onload=function(){var buf=r.result,n=pdfPages(buf),r2=new FileReader();r2.onload=function(){DOC={kind:"pdf",pdf:r2.result,pages:n,name:f.name};info.textContent="📄 "+f.name+" — "+AN(n)+" صفحة"+(n>10?" (الحد ١٠، ارفع صفحات الدرس فقط)":"");est()};r2.readAsDataURL(f)};r.readAsArrayBuffer(f);return}
+  var r=new FileReader();r.onload=function(){var buf=r.result,n=pdfPages(buf),r2=new FileReader();r2.onload=function(){DOC={kind:"pdf",pdf:r2.result,full:r2.result,buf:buf,total:n,from:1,to:Math.min(n,10),pages:Math.min(n,10),name:f.name};info.innerHTML="";info.appendChild(document.createTextNode("📄 "+f.name+" — "+AN(n)+" صفحة"));if(n>1)rangeUI(info,n);else est()};r2.readAsDataURL(f)};r.readAsArrayBuffer(f);return}
  if(/\.docx$/i.test(f.name)){info.textContent="جاري قراءة ملف Word…";loadMammoth().then(function(){var r=new FileReader();r.onload=function(){window.mammoth.extractRawText({arrayBuffer:r.result}).then(function(x){var t=x.value.trim();if(words(t)<25){info.className="msg err";info.textContent="ما لقيت نص كافي في الملف";return}DOC={kind:"text",text:t,pages:Math.max(1,Math.ceil(words(t)/450)),name:f.name};info.textContent="📄 "+f.name+" — "+AN(DOC.pages)+" صفحة تقريباً";est()}).catch(function(){info.className="msg err";info.textContent="تعذّرت قراءة الملف. احفظه PDF وارفعه"})};r.readAsArrayBuffer(f)}).catch(function(){info.className="msg err";info.textContent="تعذّر تحميل قارئ Word. احفظ الملف PDF وارفعه"});return}
  info.className="msg err";info.textContent="الصيغة غير مدعومة. ارفع PDF أو Word (docx) أو استخدم «صورة الكتاب»"}
+function rangeUI(info,n){var w=document.createElement("div");w.className="prange";w.innerHTML='<span>صفحات الدرس: من</span><input type="number" id="pFrom" min="1" max="'+n+'" value="1"><span>إلى</span><input type="number" id="pTo" min="1" max="'+n+'" value="'+Math.min(n,10)+'"><small>اختر صفحات الدرس فقط — تُحسب الصفحات المختارة (الحد ١٠)</small>';info.appendChild(w);
+ var t=null;function ch(){clearTimeout(t);t=setTimeout(function(){var a=Math.max(1,Math.min(n,+$("#pFrom").value||1)),b=Math.max(a,Math.min(n,+$("#pTo").value||a));DOC.from=a;DOC.to=b;DOC.pages=b-a+1;est();if(DOC.pages>10)return;cutPdf()},350)}
+ $("#pFrom").addEventListener("input",ch);$("#pTo").addEventListener("input",ch);ch()}
+function loadPdfLib(){if(window.PDFLib)return Promise.resolve();return new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function cutPdf(){var d=DOC;if(d.from===1&&d.to===d.total){d.pdf=d.full;d.busy=null;return}var key=d.from+"-"+d.to;d.busy=key;
+ loadPdfLib().then(function(){return PDFLib.PDFDocument.load(d.buf,{ignoreEncryption:true})}).then(function(src){return PDFLib.PDFDocument.create().then(function(out){var ix=[];for(var i=d.from-1;i<d.to;i++)ix.push(i);return out.copyPages(src,ix).then(function(pp){pp.forEach(function(p){out.addPage(p)});return out.saveAsBase64({dataUri:true,useObjectStreams:false})})})})
+  .then(function(u){if(DOC===d&&d.busy===key){d.pdf=u;d.busy=null}}).catch(function(){if(DOC===d&&d.busy===key){d.busy="err"}})}
 function loadMammoth(){if(window.mammoth)return Promise.resolve();return new Promise(function(res,rej){var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 $("#txt").addEventListener("input",est);
 function need(){if(KIND==="images")return IMGS.length;if(KIND==="file")return DOC?DOC.pages:0;if(KIND==="text"){var w=words($("#txt").value);return w?Math.max(1,Math.ceil(w/450)):0}if(KIND==="url")return $("#url").value.trim()?-1:0;return 0}
@@ -184,7 +192,7 @@ var PH=["أقرأ الدرس…","أحدد الأهداف والمفاهيم…"
 $("#gen").addEventListener("click",function(){var m=$("#genMsg");m.className="msg";m.textContent="";
  var b={wallet:W,subject:$("#subject").value,grade:$("#grade").value,notes:$("#notes").value};
  if(KIND==="images"){if(!IMGS.length)return err("ارفع صورة صفحة الدرس أولاً");b.kind="images";b.images=IMGS}
- else if(KIND==="file"){if(!DOC)return err("ارفع ملف الدرس أولاً");if(DOC.pages>10)return err("الملف أكثر من ١٠ صفحات");b.kind=DOC.kind;if(DOC.kind==="pdf")b.pdf=DOC.pdf;else b.text=DOC.text}
+ else if(KIND==="file"){if(!DOC)return err("ارفع ملف الدرس أولاً");if(DOC.pages>10)return err("اختر ١٠ صفحات أو أقل من الملف");if(DOC.busy==="err")return err("تعذّر قص الصفحات. احفظ صفحات الدرس في ملف منفصل وارفعه");if(DOC.busy)return err("لحظة، نجهّز الصفحات المختارة… اضغط مرة ثانية بعد ثوانٍ");b.kind=DOC.kind;if(DOC.kind==="pdf")b.pdf=DOC.pdf;else b.text=DOC.text}
  else if(KIND==="url"){var u=$("#url").value.trim();if(!/^https?:\/\//.test(u))return err("حط رابط يبدأ بـ https");b.kind="url";b.url=u}
  else{if(words($("#txt").value)<25)return err("الصق نص الدرس كاملاً");b.kind="text";b.text=$("#txt").value}
  var n=need();if(n>0&&n>CR){err("رصيدك "+AN(CR)+" ويحتاج الدرس "+AN(n)+". اشحن رصيدك أولاً");$("#topup").scrollIntoView({behavior:"smooth"});return}

@@ -454,27 +454,44 @@ function openClosed(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,
  return {points:{open:WP(A,[0,1.1,0]),closed:WP(B,[0,1.15,0]),dorsal:WP(A,[.2,.75,.2]),sinus:WP(A,[.3,-.45,.5]),heartB:WP(B,[-.75,-.75,.2]),gills:WP(B,[-1.05,.45,.4])}}}
 
 // حرارة الجسم: متغيّر (سحلية) وثابت (طائر) — kit.thermo({}) → {set(temp),points}
-function thermo(o={}){const g=new THREE.Group();put(g,o.parent);ground({color:"#e8c98a",color2:"#d9b46e",size:16,flat:5});const sunO=sun({pos:[-4,6.5,-5],size:.75});
- const rock=blob({r:.9,scale:[1.4,.5,1],pos:[-2.3,.2,0],color:"#a08c7a",seed:9,amp:.15,parent:g});
- const Lz=new THREE.Group();Lz.position.set(-2.3,.62,0);g.add(Lz);const lc="#6aa84f";
- const lb=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.75,8,16),mat(lc,{roughness:.6}));lb.rotation.z=Math.PI/2;Lz.add(lb);
- const lh=blob({r:.18,scale:[1.4,.8,1],pos:[-.62,.04,0],color:lc,seed:2,parent:Lz});const lt=vtube([[.45,0,0],[.9,-.03,.1],[1.35,-.06,.3],[1.6,-.08,.55]],{r:t=>.13*(1-t)+.01,color:lc,parent:Lz});
- [[-.3,1],[.3,1],[-.3,-1],[.3,-1]].forEach(q=>{const l=new THREE.Mesh(new THREE.CapsuleGeometry(.05,.2,4,8),mat(lc));l.position.set(q[0],-.12,q[1]*.22);l.rotation.x=q[1]*.9;Lz.add(l)});
- [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.035,10,8),mat("#111"));e.position.set(-.72,.1,s*.1);Lz.add(e)});
- const Bd=new THREE.Group();Bd.position.set(2.2,0,0);g.add(Bd);const bc="#4e8fd8";
- const bb=blob({r:.42,scale:[1.25,.95,.9],pos:[0,.75,0],color:bc,seed:5,amp:.04,parent:Bd});blob({r:.25,pos:[-.45,1.15,0],color:bc,seed:6,amp:.03,parent:Bd});
- const bk=new THREE.Mesh(new THREE.ConeGeometry(.07,.22,12),mat("#f2a33a"));bk.rotation.z=Math.PI/2;bk.position.set(-.75,1.13,0);Bd.add(bk);
- [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),mat("#111"));e.position.set(-.6,1.22,s*.12);Bd.add(e);const w=blob({r:.3,scale:[1.3,.5,.25],pos:[.05,.8,s*.36],color:"#3b78c2",seed:s+8,parent:Bd});w.rotation.x=s*.2;
-  const lg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.42,8),mat("#f2a33a"));lg.position.set(0,.2,s*.12);Bd.add(lg)});
- const tm=(x)=>{const tg=new THREE.Group();tg.position.set(x,0,1.1);g.add(tg);const gl=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.9,20),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.25,roughness:.05,depthWrite:false}));gl.position.y=1.15;tg.add(gl);
-  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.16,20,14),glowMat("#e8262b",.5));bulb.position.y=.18;tg.add(bulb);const colm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,1,12),glowMat("#e8262b",.5));colm.geometry.translate(0,.5,0);colm.position.y=.25;tg.add(colm);return colm};
- const tL=tm(-1.1),tB=tm(3.3);const lbL=addLabel("",-1.1,2.35,1.1),lbB=addLabel("",3.3,2.35,1.1);
- const S={env:25};const set=v=>{S.env=+v;const lzT=clamp(S.env,0,45),bT=41;tL.scale.y=lzT/45*1.7+.02;tB.scale.y=bT/45*1.7;lbL.element.textContent=Math.round(lzT)+"° سحلية";lbB.element.textContent=bT+"° طائر";
-  sunO.children[1].intensity=8+S.env*.9;sunL.intensity=.8+S.env/30;scene.background=canvasTex(2,256,(gx)=>{const gr=gx.createLinearGradient(0,0,0,256);const top=new THREE.Color("#8fb6d9").lerp(new THREE.Color("#ffb36b"),S.env/45);gr.addColorStop(0,"#"+top.getHexString());gr.addColorStop(1,"#fff1dc");gx.fillStyle=gr;gx.fillRect(0,0,2,256)});
-  ui.result(S.env<15?"الجو بارد: حرارة السحلية انخفضت فصارت بطيئة، والطائر حرارته ثابتة":S.env>35?"الجو حار: حرارة السحلية ارتفعت فتختبئ تحت الصخور، والطائر يتخلص من الحرارة":"حرارة السحلية تساوي حرارة الجو، والطائر ثابت عند ٤١°")};
- onFrame((t,dt)=>{const act=clamp((S.env-8)/25,0,1);lt.rotation.y=Math.sin(t*3)*.25*act;Lz.position.x=-2.3+Math.sin(t*1.5)*.15*act;Bd.children[0].scale.y=1+.02*Math.sin(t*4)});
- view(0,3.2,8.6,.4,1,0);set(25);
- return {set,points:{lizard:[-2.3,1.2,0],bird:[2.2,1.75,0],rock:[-2.3,.15,.9]}}}
+// الكاميرا ثابتة من الأمام (لا دوران تلقائي) حتى لا يتبادل اليمين واليسار، وكل حيوان معه ميزانه وبطاقته
+function thermo(o={}){const g=new THREE.Group();put(g,o.parent);C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.55;C.maxAzimuthAngle=.55;C.maxPolarAngle=1.45;
+ ground({color:"#ead39a",color2:"#dcbf7c",size:18,flat:6});const sunO=sun({pos:[-5,6.8,-6],size:.8});
+ // ---- السحلية على صخرة (يسار)
+ const LX=-2.4;const rock=blob({r:1,scale:[1.5,.48,1.05],pos:[LX,.22,0],color:"#a99482",seed:9,amp:.14,parent:g});
+ const Lz=new THREE.Group();Lz.position.set(LX+.1,.66,.05);Lz.scale.setScalar(1.45);g.add(Lz);
+ const sp=[[-1.05,.1,0],[-.82,.08,0],[-.6,.06,0],[-.25,.05,0],[.15,.05,0],[.5,.04,.05],[.9,.02,.22],[1.25,0,.48],[1.5,-.01,.82],[1.6,-.02,1.1]];
+ const rad=t=>t<.1?.1+.06*Math.sin(t/.1*Math.PI*.9):t<.17?.1:t<.5?.1+.07*Math.sin((t-.17)/.33*Math.PI):Math.max(.012,.1*(1-(t-.5)/.5));
+ const lzc=t=>{const c=col("#5fae3e");if(t>.18&&t<.92&&Math.sin(t*90)>.55)c.lerp(col("#2f6f2a"),.7);if(t<.06)c.lerp(col("#7cc252"),.4);return c};
+ const body=vtube(sp,{r:rad,colorFn:lzc,parent:Lz,seg:220,radial:22,rough:.55});body.scale.set(1,.72,1);
+ [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.045,16,12),mat("#1b1b1b",{roughness:.2}));e.position.set(-.86,.09,s*.085);Lz.add(e);const hl=new THREE.Mesh(new THREE.SphereGeometry(.013,8,6),glowMat("#ffffff",1));hl.position.set(-.89,.11,s*.11);Lz.add(hl)});
+ const legs=[];[[-.42,1],[-.42,-1],[.38,1],[.38,-1]].forEach(([x,s])=>{const lg=new THREE.Group();lg.position.set(x,.02,s*.1);Lz.add(lg);
+  vtube([[0,0,0],[x<0?-.06:.06,.1,s*.2],[x<0?-.1:.1,-.1,s*.32]],{r:.036,color:"#5fae3e",parent:lg,seg:16,radial:10});
+  const ft=new THREE.Mesh(new THREE.SphereGeometry(.05,12,8),mat("#4f9a35"));ft.scale.set(1.4,.35,1);ft.position.set(x<0?-.1:.1,-.12,s*.33);lg.add(ft);legs.push(lg)});
+ const tm=(x,z)=>{const tg=new THREE.Group();tg.position.set(x,0,z);g.add(tg);const gl=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,2.1,24),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.3,roughness:.05,depthWrite:false}));gl.position.y=1.27;tg.add(gl);
+  const tick=new THREE.Mesh(new THREE.BoxGeometry(.02,2,.02),mat("#33415c"));tick.position.set(.13,1.25,0);tg.add(tick);for(let k=0;k<=9;k++){const tk=new THREE.Mesh(new THREE.BoxGeometry(k%2?.06:.12,.015,.02),mat("#33415c"));tk.position.set(.16,.3+k*.19,0);tg.add(tk)}
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.18,24,16),glowMat("#e8262b",.5));bulb.position.y=.18;tg.add(bulb);const cm=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1,14),glowMat("#e8262b",.5));cm.geometry.translate(0,.5,0);cm.position.y=.3;tg.add(cm);return cm};
+ const tL=tm(LX+1.95,-.35);
+ // ---- الطائر على غصن (يمين)
+ const BX=2.5;const perch=new THREE.Group();perch.position.set(BX,0,0);g.add(perch);
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,1.1,12),mat("#7a5634"));post.position.y=.55;perch.add(post);const br=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1.2,12),mat("#7a5634"));br.rotation.z=Math.PI/2;br.position.y=1.1;perch.add(br);
+ const Bd=new THREE.Group();Bd.position.set(BX,1.15,0);g.add(Bd);const bc="#3f86d8";
+ blob({r:.42,scale:[1.25,.95,.9],pos:[0,.42,0],color:bc,seed:5,amp:.03,parent:Bd});blob({r:.32,scale:[1,.8,.85],pos:[.05,.3,0],color:"#dceeff",seed:6,amp:.02,parent:Bd}).position.set(-.12,.3,0);
+ const hd=blob({r:.27,pos:[-.45,.85,0],color:bc,seed:7,amp:.02,parent:Bd});
+ const bk=new THREE.Mesh(new THREE.ConeGeometry(.08,.26,14),mat("#f2a33a"));bk.rotation.z=Math.PI/2;bk.position.set(-.8,.83,0);Bd.add(bk);
+ [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.045,12,10),mat("#111",{roughness:.2}));e.position.set(-.6,.93,s*.17);Bd.add(e);const w=blob({r:.32,scale:[1.35,.55,.25],pos:[.1,.48,s*.37],color:"#2f6fb8",seed:s+8,parent:Bd});w.rotation.x=s*.25;
+  const lg=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.22,8),mat("#f2a33a"));lg.position.set(0,0,s*.12);Bd.add(lg)});
+ const tl=new THREE.Mesh(new THREE.ConeGeometry(.2,.6,4),mat("#2f6fb8"));tl.rotation.z=-Math.PI/2-.4;tl.position.set(.65,.3,0);tl.scale.z=.35;Bd.add(tl);
+ const tB=tm(BX+1.2,-.35);
+ const lbL=addLabel("",LX+.2,2.75,0),lbB=addLabel("",BX+.5,2.75,0);lbL.element.style.background="#2f9e5b";lbB.element.style.background="#2f6fd1";lbL.element.style.fontSize=lbB.element.style.fontSize="15px";
+ const S={env:25};const set=v=>{S.env=+v;const lzT=clamp(S.env,0,45),bT=41;tL.scale.y=lzT/45*1.75+.02;tB.scale.y=bT/45*1.75;
+  lbL.element.textContent="🦎 السحلية: متغيّرة الحرارة · "+Math.round(lzT)+"°";lbB.element.textContent="🐦 الطائر: ثابت الحرارة · "+bT+"°";
+  sunO.children[1].intensity=8+S.env*.9;sunL.intensity=.8+S.env/28;const top=new THREE.Color("#8fb6d9").lerp(new THREE.Color("#ffb36b"),S.env/45);sky("#"+top.getHexString(),"#fff1dc");
+  ui.result(S.env<15?"الجو بارد: حرارة السحلية انخفضت فصارت بطيئة، والطائر بقيت حرارته ٤١°":S.env>35?"الجو حار: حرارة السحلية ارتفعت فتختبئ في الظل، والطائر بقيت حرارته ٤١°":"حرارة السحلية تساوي حرارة الجو تقريباً، والطائر ثابت عند ٤١°")};
+ onFrame((t,dt)=>{const act=clamp((S.env-6)/22,0,1)*(S.env>36?.4:1);body.rotation.y=Math.sin(t*2.4*act)*.06*act;Lz.position.y=.66+Math.max(0,Math.sin(t*3*act))*.04*act;legs.forEach((l,k)=>l.rotation.z=Math.sin(t*4*act+k*1.6)*.25*act);
+  const shade=S.env>36?1:0;Lz.position.z+=((shade?1.05:.05)-Lz.position.z)*Math.min(1,dt*1.5);Bd.children[0].scale.y=1+.02*Math.sin(t*4)});
+ view(0,2.9,7.2,0,1.2,0);set(25);
+ return {set,points:{lizard:[LX,1.3,0],bird:[BX,2.3,0],rock:[LX,.15,.9]}}}
 
 // تجربة امتصاص الورق للماء — kit.paperTest({}) → {dip(),reset(),points}
 function paperTest(o={}){const g=new THREE.Group();put(g,o.parent);bodySky();

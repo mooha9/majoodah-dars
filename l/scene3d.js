@@ -557,9 +557,11 @@ const glb=n=>GLC[n]||(GLC[n]=new Promise((ok,no)=>GL.load(MB+n+".glb",g=>ok(g.sc
 const ORG={trachea:["#f1d2c4","القصبة الهوائية"],bronchi:["#fff0e8","الشعب الهوائية"],rul:["#f07592","الرئة اليمنى"],rml:["#f68aa3",""],rll:["#e9688a",""],lul:["#f07592","الرئة اليسرى"],lll:["#e9688a",""],diaphragm:["#c9584f","الحجاب الحاجز"],
  esophagus:["#ec8a7c","المريء"],stomach:["#ec6079","المعدة"],duodenum:["#f6a6a6",""],jejunum:["#f9b0ae","الأمعاء الدقيقة"],ileum:["#f5a0a2",""],colon:["#e6a064","الأمعاء الغليظة"],rectum:["#d98d5e","المستقيم"],liver:["#9a3a2c","الكبد"],gallbladder:["#4f9a3c","المرارة"],pancreas:["#f2c46b","البنكرياس"],
  heart:["#c8343f","القلب"],aorta:["#e2333b","الشريان الأبهر"],svc:["#3d6df2","الوريد الأجوف"],ivc:["#3d6df2",""],partery:["#3d6df2","الشريان الرئوي"],pvein:["#e2333b","الوريد الرئوي"],skin:["#ffd9c4",""]};
-function skinMat(op){return new THREE.ShaderMaterial({uniforms:{c:{value:col("#e9a07f")},k:{value:op}},transparent:true,depthWrite:false,side:THREE.FrontSide,
- vertexShader:"varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
- fragmentShader:"uniform vec3 c;uniform float k;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.2);gl_FragColor=vec4(c,clamp(f*k*4.5+0.025,0.0,0.75));}"})}
+// الجلد: حواف شفافة فقط، ويُقصّ تحت أسفل البطن (٩٫٣ = ٩٣ سم) — شرح للأطفال
+const SKIN_CUT=9.3;
+function skinMat(op){return new THREE.ShaderMaterial({uniforms:{c:{value:col("#e9a07f")},k:{value:op},cut:{value:SKIN_CUT}},transparent:true,depthWrite:false,side:THREE.FrontSide,
+ vertexShader:"varying vec3 vN;varying vec3 vV;varying float vY;void main(){vec4 w=modelMatrix*vec4(position,1.0);vY=w.y;vec4 mv=viewMatrix*w;vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
+ fragmentShader:"uniform vec3 c;uniform float k;uniform float cut;varying vec3 vN;varying vec3 vV;varying float vY;void main(){if(vY<cut)discard;float f=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.2);float e=smoothstep(cut,cut+0.45,vY);gl_FragColor=vec4(c,clamp(f*k*4.5+0.025,0.0,0.75)*e);}"})}
 function organMat(n,o){if(n==="skin")return skinMat(o&&o.opacity!=null?o.opacity:.14);const c=(ORG[n]||["#ddd"])[0];const tr=o&&o.opacity<1;return new THREE.MeshPhysicalMaterial({color:col(c).convertSRGBToLinear().convertLinearToSRGB(),roughness:n==="skin"?.6:.38,clearcoat:n==="skin"?0:.45,clearcoatRoughness:.35,sheen:.12,sheenColor:col("#ffe0e6"),transparent:!!tr,opacity:o&&o.opacity!=null?o.opacity:1,depthWrite:!tr,side:THREE.DoubleSide,emissive:col(c),emissiveIntensity:0})}
 // anatomy({systems:['resp','heart','dig'],skin:true,opacity:{name:0.5},labels:true}) → {group,ready,mesh(name),center(name),glow(name,on)}
 function anatomy(o={}){const g=new THREE.Group();put(g,o.parent);const sys=o.systems||["resp","heart","dig"];const M={},op=o.opacity||{};const LB={};
@@ -582,15 +584,40 @@ function realLungs(o={}){bodySky();const A=anatomy(Object.assign({systems:["resp
  onFrame((t,dt)=>{S.ph+=dt*TAU*S.rate/60;const b=Math.sin(S.ph),inh=Math.cos(S.ph)>0;if(S.L){S.L.scale.set(1+.05*b,1+.06*b,1+.05*b);S.d.position.y=S.dy-.14*b}
   air.forEach((m,k)=>{const o2=k%2===0;m.speed=(o2?inh:!inh)?(o2?.3:-.3)*S.rate/14:0;m.visible=(o2?inh:!inh)?12:0})});
  return {ready:A.ready,anatomy:A,setRate:n=>{S.rate=+n||14}}}
-// الجهاز الهضمي الحقيقي + رحلة اللقمة (إضاءة العضو والكاميرا عليه)
-function realDigestive(o={}){bodySky();const A=anatomy(Object.assign({systems:["dig"],opacity:{liver:.82},hide:["ileum","duodenum"],labelOff:{jejunum:[.1,.2,0],colon:[0,-.3,0],gallbladder:[0,-.25,0],pancreas:[0,-.15,0]}},o));view(0,10.9,8.6,0,10.5,1.1);sway();
- const STEPS=[["esophagus","المريء: تنزل اللقمة من الفم إلى المعدة"],["stomach","المعدة: الحمض والإنزيم يحلّلان الغذاء"],["liver","الكبد يفرز العصارة الصفراء… ويساعد البنكرياس بالإنزيمات"],["jejunum","الأمعاء الدقيقة: تُمتص المواد الغذائية إلى الدم"],["colon","الأمعاء الغليظة: يُمتص الماء من الفضلات"],["rectum","تُطرح الفضلات خارج الجسم"]];
- const S={k:-1,t:0};const start=()=>{A.ready.then(()=>{S.k=0;S.t=0;snd("whoosh")})};
- onFrame((t,dt)=>{if(S.k<0)return;if(S.t===0){Object.keys(ORG).forEach(n=>A.glow(n,false));const n=STEPS[S.k][0];A.glow(n,true);if(n==="liver")A.glow("pancreas",true);if(n==="jejunum"){A.glow("ileum",true);A.glow("duodenum",true)}ui.result(STEPS[S.k][1]);const c=A.center(n);focus(c.x,c.y,c.z,5.6)}
-  S.t+=dt;const m=A.mesh(STEPS[S.k][0]);if(m)m.material.emissiveIntensity=.3+.25*Math.sin(t*6);if(S.t>2.8){S.k++;S.t=0;snd("pop");if(S.k>=STEPS.length){S.k=-1;Object.keys(ORG).forEach(n=>A.glow(n,false));ui.result("انتهت الرحلة! 🎉");snd("ding");focus(0,10.5,1.1,7.5)}}});
+// الجهاز الهضمي الحقيقي + رحلة اللقمة: لقمة مضيئة واضحة (تظهر حتى داخل الأعضاء) تمر بالأعضاء بالترتيب
+function realDigestive(o={}){bodySky();const A=anatomy(Object.assign({systems:["dig"],opacity:{liver:.82,stomach:.8,jejunum:.8,ileum:.8,duodenum:.8,colon:.85},hide:["ileum","duodenum"],labelOff:{jejunum:[.1,.2,0],colon:[0,-.3,0],gallbladder:[0,-.25,0],pancreas:[0,-.15,0]}},o));view(0,10.9,8.6,0,10.5,1.1);sway();
+ // اللقمة
+ const BG=new THREE.Group();BG.visible=false;BG.renderOrder=30;scene.add(BG);
+ const bm=new THREE.MeshStandardMaterial({color:col("#ff8c00"),emissive:col("#ff6a00"),emissiveIntensity:.5,roughness:.35,depthTest:false,transparent:true,toneMapped:false});
+ const ball=new THREE.Mesh(new THREE.IcosahedronGeometry(.2,3),bm);ball.renderOrder=31;BG.add(ball);
+ {const p=ball.geometry.attributes.position,v=new THREE.Vector3();for(let k=0;k<p.count;k++){v.fromBufferAttribute(p,k);v.multiplyScalar(1+(fbm(v.x*9+3,v.y*9+v.z*5)-.5)*.35);p.setXYZ(k,v.x,v.y,v.z)}ball.geometry.computeVertexNormals()}
+ const halo=new THREE.Mesh(new THREE.RingGeometry(.27,.33,48),new THREE.MeshBasicMaterial({color:col("#ffffff"),transparent:true,opacity:1,depthTest:false,side:THREE.DoubleSide,toneMapped:false}));halo.renderOrder=32;BG.add(halo);
+ const halo2=new THREE.Mesh(new THREE.RingGeometry(.33,.42,48),new THREE.MeshBasicMaterial({color:col("#ff6a00"),transparent:true,opacity:1,depthTest:false,side:THREE.DoubleSide,toneMapped:false}));halo2.renderOrder=32;BG.add(halo2);
+ const tag=addLabel("🍎 اللقمة",0,0,0);tag.element.style.background="#ff6a00";tag.element.style.fontSize="15px";tag.visible=false;
+ const STEPS=[["esophagus","المريء: تنزل اللقمة من الفم إلى المعدة","#ff8c00"],["stomach","المعدة: الحمض والإنزيم يحلّلان الغذاء فيصير سائلاً كثيفاً","#ffa600"],["liver","الكبد والبنكرياس يرسلان عصارات تكمل الهضم","#ffa600"],["jejunum","الأمعاء الدقيقة: تُمتص المواد الغذائية إلى الدم","#f29a00"],["colon","الأمعاء الغليظة: يُمتص الماء من الفضلات","#a0561c"],["rectum","تُطرح الفضلات خارج الجسم","#7a3f14"]];
+ const PATH=[];const S={k:-1,t:0},DUR=[2.6,3.4,2.4,4.2,4.4,2.2];
+ const nut=particles({kind:"spark",rate:0,color:["#ff4a4a","#ff9a9a"],size:[.28,.06],life:[.8,1.2],speed:[.4,.8],spread:1,max:300});nut.obj.material.depthTest=false;nut.obj.renderOrder=33;
+ const wat=particles({kind:"dust",rate:0,color:["#3fb0ff","#9fd8ff"],size:[.24,.06],life:[.8,1.2],speed:[.3,.6],spread:1,max:200,additive:true});wat.obj.material.depthTest=false;wat.obj.renderOrder=33;
+ A.ready.then(()=>{const b=n=>A.box(n),c=n=>A.center(n),P=(x,y,z)=>V(x,y,z);
+  const e=b("esophagus"),ec=c("esophagus"),st=b("stomach"),sc=c("stomach"),du=c("duodenum"),je=c("jejunum"),il=c("ileum"),co=b("colon"),cc=c("colon"),re=b("rectum"),rc=c("rectum");
+  const z=sc.z+.25,cz=cc.z+.2;const eTop=P(ec.x,e.max.y-.1,ec.z),eBot=P(ec.x+.05,e.min.y+.15,ec.z);
+  const pyl=P(st.min.x+.25,sc.y-.25,z),cecum=P(co.min.x+.35,co.min.y+.55,cz),ascT=P(co.min.x+.35,co.max.y-.35,cz),trL=P(co.max.x-.35,co.max.y-.35,cz),dsB=P(co.max.x-.35,co.min.y+.6,cz);
+  const segs=[[eTop,P(ec.x,(e.max.y+e.min.y)/2,ec.z),eBot],[eBot,P(sc.x+.15,sc.y+.2,z),P(sc.x,sc.y-.05,z),pyl],[pyl,P(du.x,du.y,du.z+.25)],[P(du.x,du.y,du.z+.25),P(je.x+.3,je.y+.1,je.z+.25),P(je.x-.3,je.y-.2,je.z+.25),P(il.x,il.y,il.z+.25),cecum],[cecum,ascT,trL,dsB],[dsB,P(rc.x,re.max.y-.1,rc.z+.1),P(rc.x,re.min.y+.1,rc.z+.1)]];
+  segs.forEach(pts=>PATH.push(new THREE.CatmullRomCurve3(pts.length>1?pts:[pts[0],pts[0]],false,"centripetal")))});
+ const start=()=>{A.ready.then(()=>{S.k=0;S.t=0;BG.visible=true;tag.visible=true;ball.scale.setScalar(1);snd("whoosh")})};
+ const tmp=new THREE.Vector3();
+ onFrame((t,dt)=>{halo.quaternion.copy(camera.quaternion);halo2.quaternion.copy(camera.quaternion);if(S.k<0)return;const k=S.k;
+  if(S.t===0){Object.keys(ORG).forEach(n=>A.glow(n,false));const n=STEPS[k][0];A.glow(n,true);if(n==="liver"){A.glow("pancreas",true);A.glow("gallbladder",true)}if(n==="jejunum"){A.glow("ileum",true);A.glow("duodenum",true)}
+   ui.result(STEPS[k][1]);const cc=A.center(n==="liver"?"duodenum":n);focus(cc.x,cc.y,cc.z,n==="esophagus"?6.4:5.4)}
+  S.t+=dt;const u=clamp(S.t/DUR[k],0,1);const cv=PATH[k];if(cv){cv.getPointAt(ease(u),tmp);BG.position.copy(tmp);tag.position.copy(tmp).add(V(0,.42,0))}
+  const sc=[1.1,1.1-.25*u,.85,.85,.8,.8][k];ball.scale.setScalar(sc*(1+.06*Math.sin(t*8)));if(k===1)ball.rotation.y+=dt*6;
+  bm.color.set(STEPS[k][2]);bm.emissive.set(STEPS[k][2]).multiplyScalar(.45);halo2.material.color.set(STEPS[k][2]);tag.element.style.background=STEPS[k][2];
+  if(k===3&&Math.random()<.6){nut.pos.copy(tmp);nut.emit(2)}if(k===4&&Math.random()<.5){wat.pos.copy(tmp);wat.emit(1)}
+  const m=A.mesh(STEPS[k][0]);if(m)m.material.emissiveIntensity=.25+.2*Math.sin(t*6);
+  if(S.t>DUR[k]+.5){S.k++;S.t=0;snd("pop");if(S.k>=STEPS.length){S.k=-1;BG.visible=false;tag.visible=false;Object.keys(ORG).forEach(n=>A.glow(n,false));ui.result("انتهت الرحلة! 🎉 اضغط مرة ثانية لتعيدها");snd("ding");focus(0,10.5,1.1,8.6)}}});
  return {ready:A.ready,anatomy:A,start}}
 // نظرة عامة: الأجهزة الثلاثة الحقيقية في الجسم
-function realBody(o={}){bodySky();const A=anatomy(Object.assign({systems:["resp","heart","dig"],opacity:{rul:.75,rml:.75,rll:.75,lul:.75,lll:.75},labels:false,skinOpacity:.14},o));view(0,11.2,9.5,0,10.9,1);sway();
+function realBody(o={}){bodySky();const A=anatomy(Object.assign({systems:["resp","heart","dig"],opacity:{rul:.75,rml:.75,rll:.75,lul:.75,lll:.75},labels:false,skinOpacity:.14},o));view(0,11.6,8.6,0,11.3,1);sway();
  const SY={resp:["trachea","bronchi","rul","rml","rll","lul","lll","diaphragm"],dig:["esophagus","stomach","duodenum","jejunum","ileum","colon","rectum","liver","gallbladder","pancreas"],circ:["heart","aorta","svc","ivc","partery","pvein"]};
  const show=k=>A.ready.then(()=>{Object.entries(SY).forEach(([s,ns])=>ns.forEach(n=>{const m=A.mesh(n);if(m)m.visible=k==="all"||k===s}))});
  const HB={on:true};onFrame(t=>{const h=A.mesh&&A.mesh("heart");if(h){const f=(t*1.2)%1;h.scale.setScalar(h.userData.s0||(h.userData.s0=h.scale.x));h.scale.multiplyScalar(1+.05*Math.exp(-Math.pow((f-.1)/.06,2)))}});

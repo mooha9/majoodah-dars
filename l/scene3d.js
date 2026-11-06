@@ -597,7 +597,7 @@ function realDigestive(o={}){bodySky();const A=anatomy(Object.assign({systems:["
  {const p=ball.geometry.attributes.position,v=new THREE.Vector3();for(let k=0;k<p.count;k++){v.fromBufferAttribute(p,k);v.multiplyScalar(1+(fbm(v.x*9+3,v.y*9+v.z*5)-.5)*.35);p.setXYZ(k,v.x,v.y,v.z)}ball.geometry.computeVertexNormals()}
  const halo=new THREE.Mesh(new THREE.RingGeometry(.27,.33,48),new THREE.MeshBasicMaterial({color:col("#ffffff"),transparent:true,opacity:1,depthTest:false,side:THREE.DoubleSide,toneMapped:false}));halo.renderOrder=32;BG.add(halo);
  const halo2=new THREE.Mesh(new THREE.RingGeometry(.33,.42,48),new THREE.MeshBasicMaterial({color:col("#ff6a00"),transparent:true,opacity:1,depthTest:false,side:THREE.DoubleSide,toneMapped:false}));halo2.renderOrder=32;BG.add(halo2);
- const tag=addLabel("🍎 الغذاء",0,0,0);tag.element.style.background="#ff6a00";tag.element.style.fontSize="15px";tag.visible=false;
+ const tag=addLabel("🍎 رحلة الغذاء عند الهضم",0,0,0);tag.element.style.background="#ff6a00";tag.element.style.fontSize="15px";tag.visible=false;
  const STEPS=[["mouth","الفم: تقطع الأسنان الغذاء وتطحنه، ويختلط باللعاب","#ff8c00"],["esophagus","المريء: ينزل الغذاء من الفم إلى المعدة","#ff8c00"],["stomach","المعدة: الحمض والإنزيم يحلّلان الغذاء فيصير سائلاً كثيفاً","#ffa600"],["liver","الكبد والبنكرياس يرسلان عصارات تكمل الهضم","#ffa600"],["jejunum","الأمعاء الدقيقة: تُمتص المواد الغذائية إلى الدم","#f29a00"],["colon","الأمعاء الغليظة: يُمتص الماء من الفضلات","#a0561c"],["rectum","تُطرح الفضلات خارج الجسم","#7a3f14"]];
  const PATH=[];const S={k:-1,t:0},DUR=[3.2,2.6,3.4,2.4,4.2,4.4,2.2];
  const nut=particles({kind:"spark",rate:0,color:["#ff4a4a","#ff9a9a"],size:[.28,.06],life:[.8,1.2],speed:[.4,.8],spread:1,max:300});nut.obj.material.depthTest=false;nut.obj.renderOrder=33;
@@ -656,44 +656,86 @@ function sponge(o={}){const g=new THREE.Group();put(g,o.parent);sky("#5cc4f2","#
  const a0=Math.PI*.62,r1=RO(1.6);return {group:g,flow:on=>{S.on=on!==false;snd("blub")},fast:()=>{S.sp=.22;setTimeout(()=>S.sp=.09,3000)},
   points:{pore:[Math.sin(a0)*(r1+.15),1.6,Math.cos(a0)*(r1+.15)],cavity:[0,3.0,.3],top:[0,H+.45,0],wall:[Math.sin(Math.PI*1.75)*(RO(1.1)-T),1.1,Math.cos(Math.PI*1.75)*(RO(1.1)-T)],out:[.5,H+1.8,0]}}}
 
-// فتحة واحدة للابتلاع والإخراج: الهيدرا (من اللاسعات) والبلاناريا (دودة مفلطحة) — kit.oneOpening({}) → {feed(),points}
-function oneOpening(o={}){const g=new THREE.Group();put(g,o.parent);sky("#7fd0f5","#e3f7ff");hemi.intensity=1.45;C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.6;C.maxAzimuthAngle=.6;
- const floor=new THREE.Mesh(new THREE.PlaneGeometry(16,8),mat("#cfe3c0",{roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.02;g.add(floor);
- // ---- الهيدرا (يسار): جسم أنبوبي شفاف، تجويف هضمي، فم في الأعلى ولوامس
- const Hy=new THREE.Group();Hy.position.set(-2.7,0,0);g.add(Hy);const HH=2.6;
- const hb=vtube([[0,0,0],[0,.8,0],[0,1.7,0],[0,HH,0]],{r:t=>.42-.08*t+.06*Math.sin(t*9),color:"#9fdc96",opacity:.42,parent:Hy,radial:24});hb.renderOrder=4;
- vtube([[0,.25,0],[0,1.1,0],[0,2.0,0],[0,HH-.05,0]],{r:t=>.24-.05*t,color:"#fbe3b8",parent:Hy});
- const mouthP=V(0,HH+.08,0);const ms=new THREE.Mesh(new THREE.ConeGeometry(.24,.22,20),mat("#7cc874"));ms.position.set(0,HH+.02,0);Hy.add(ms);
- const tents=[];for(let k=0;k<6;k++){const a=k/6*TAU+.3,pts=[];for(let i=0;i<=8;i++){const u=i/8;pts.push([Math.cos(a)*(.18+u*1.0),HH+.05+u*1.1-u*u*.9,Math.sin(a)*(.18+u*1.0)])}tents.push(vtube(pts,{r:t=>.06*(1-t*.6),color:"#7cc874",parent:Hy,radial:8}))}
- // ---- البلاناريا (يمين): جسم مفلطح، تجويف متفرّع، بلعوم في الوسط هو الفتحة الوحيدة
- const Pl=new THREE.Group();Pl.position.set(2.4,.08,.2);Pl.scale.setScalar(1.3);g.add(Pl);
+// فتحة واحدة للابتلاع والإخراج — kit.oneOpening({}) → {show('hydra'|'planaria'),feed()}
+// كل حيوان في إطار كامل: الهيدرا مقطوعة كالكيس (تجويف + فم واحد)، والبلاناريا يخرج بلعومها من بطنها إلى الغذاء
+function fatArrow(from,to,color,parent){const a=V(from),b=V(to),d=b.clone().sub(a),L=d.length(),g=new THREE.Group();const m=new THREE.MeshStandardMaterial({color:col(color),emissive:col(color),emissiveIntensity:.45,roughness:.5,depthTest:false,transparent:true});
+ const sh=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,L*.68,14),m);sh.position.y=L*.34;const hd=new THREE.Mesh(new THREE.ConeGeometry(.2,L*.32,18),m);hd.position.y=L*.84;g.add(sh,hd);g.position.copy(a);g.quaternion.setFromUnitVectors(V(0,1,0),d.normalize());g.renderOrder=40;sh.renderOrder=hd.renderOrder=40;put(g,parent);return g}
+function oneOpening(o={}){const g=new THREE.Group();put(g,o.parent);sky("#6ccaf3","#e6f8ff");hemi.intensity=1.55;sunL.intensity=2.1;C.autoRotate=false;SW.user=true;
+ const sand=new THREE.Mesh(new THREE.PlaneGeometry(40,16),mat("#e9dcae",{roughness:1}));sand.rotation.x=-Math.PI/2;g.add(sand);
+ const LBs={hydra:[],planaria:[]};const lab=(k,t,p,c)=>{const l=addLabel(t,p[0],p[1],p[2]);if(c)l.element.style.background=c;LBs[k].push(l);return l};
+ const ph=t=>{const e=document.createElement("div");return e};
+ // ================= الهيدرا (x=0) =================
+ const H=new THREE.Group();g.add(H);const rock=blob({r:.9,scale:[1.5,.55,1.2],color:"#9a8f80",parent:H,seed:4});rock.position.y=.1;
+ const B=new THREE.Group();B.position.y=.35;H.add(B);
+ const pr=[[.32,0],[.5,.25],[.6,1.2],[.62,2.3],[.56,2.9],[.4,3.25],[.2,3.45],[.13,3.5],[.1,3.42],[.22,3.25],[.34,3.0],[.42,2.4],[.42,1.2],[.32,.4],[0,.3]].map(q=>new THREE.Vector2(q[0],q[1]));
+ const ps=Math.PI/4,pl=Math.PI*1.5,outM=new THREE.MeshStandardMaterial({color:col("#7fcf6e"),roughness:.6,side:THREE.DoubleSide});
+ B.add(new THREE.Mesh(new THREE.LatheGeometry(pr,64,ps,pl),outM));
+ const inner=pr.slice(8).map(q=>new THREE.Vector2(Math.max(0,q.x-.012),q.y));const inM=new THREE.MeshStandardMaterial({color:col("#ffe0a8"),roughness:.7,side:THREE.DoubleSide,emissive:col("#ffb347"),emissiveIntensity:0});B.add(new THREE.Mesh(new THREE.LatheGeometry(inner,64,ps,pl),inM));
+ [ps,ps+pl].forEach(a=>{const c=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(pr)),new THREE.MeshStandardMaterial({color:col("#b9e8a8"),roughness:.8,side:THREE.DoubleSide}));c.rotation.y=a-Math.PI/2;B.add(c)});
+ const TP=[];for(let k=0;k<6;k++){const a=k/6*TAU+.5,pv=new THREE.Group();pv.position.set(Math.cos(a)*.3,3.3,Math.sin(a)*.3);pv.rotation.y=-a;B.add(pv);const pts=[];for(let i=0;i<=10;i++){const u=i/10;pts.push([u*1.7,u*1.25-u*u*.35,0])}
+  vtube(pts,{r:t=>.075*(1-t*.65),color:"#6cc25a",parent:pv,radial:10});TP.push(pv)}
+ const mouthW=V(0,.35+3.5,0),cavW=V(0,.35+1.6,0);
+ const food=new THREE.Mesh(new THREE.IcosahedronGeometry(.24,1),new THREE.MeshStandardMaterial({color:col("#ff7a1a"),emissive:col("#ff6a00"),emissiveIntensity:.5,depthTest:false,transparent:true}));food.renderOrder=41;H.add(food);food.visible=false;
+ const hIn=new THREE.CatmullRomCurve3([V(2.8,4.9,.6),V(2.1,4.75,.3),V(1.55,4.55,.15),V(.9,4.35,.1),V(.35,4.05,.05),mouthW.clone().add(V(0,.1,0)),V(0,3.2,.05),cavW]);
+ const hOut=new THREE.CatmullRomCurve3([cavW,V(0,3.1,.05),mouthW.clone().add(V(0,.15,0)),V(-.2,4.6,.1),V(-.6,5.6,.2),V(-1.1,6.6,.3)]);
+ const hw=new THREE.InstancedMesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshStandardMaterial({color:col("#7a4a1c"),depthTest:false,transparent:true}),18);hw.renderOrder=41;hw.frustumCulled=false;H.add(hw);hw.count=0;
+ const nu=particles({kind:"dust",rate:0,color:["#ffd04a","#fff2b0"],size:[.16,.04],life:[.9,1.4],speed:[.2,.45],spread:1,max:200,parent:H});nu.obj.material.depthTest=false;nu.obj.renderOrder=42;
+ const aIn=fatArrow([.95,5.0,.3],[.25,4.05,.1],"#2fbf3a",H),aOut=fatArrow([-.25,4.0,.1],[-.85,5.1,.3],"#8a4b17",H);aIn.visible=aOut.visible=false;
+ lab("hydra","الهيدرا (من اللاسعات)",[-1.6,5.6,0],"#7b4dff");lab("hydra","الفم: الفتحة الوحيدة",[1.25,3.75,.2],"#ff7a2f");lab("hydra","التجويف الهضمي",[-1.45,1.9,.3],"#14a06f");lab("hydra","اللوامس تمسك الغذاء",[2.15,5.25,.2],"#2f8cff");
+ const hStep=[lab("hydra","١ يدخل الغذاء من الفم",[1.9,4.4,.4],"#2fbf3a"),lab("hydra","٢ يُهضم داخل التجويف",[1.45,1.6,.4],"#e8a200"),lab("hydra","٣ تخرج الفضلات من الفم نفسه",[-1.9,5.0,.4],"#8a4b17")];
+ // ================= البلاناريا (x=9) =================
+ const P=new THREE.Group();P.position.set(9,0,0);g.add(P);
+ const W=new THREE.Group();W.position.y=.62;W.scale.setScalar(1.55);P.add(W);
  const sh=new THREE.Shape();sh.moveTo(0,1.9);sh.bezierCurveTo(.35,1.95,.55,1.75,.62,1.5);sh.bezierCurveTo(.7,1.35,.5,1.2,.55,1.0);sh.bezierCurveTo(.7,.3,.6,-.9,.08,-1.9);sh.lineTo(-.08,-1.9);sh.bezierCurveTo(-.6,-.9,-.7,.3,-.55,1.0);sh.bezierCurveTo(-.5,1.2,-.7,1.35,-.62,1.5);sh.bezierCurveTo(-.55,1.75,-.35,1.95,0,1.9);
- const bodyG=new THREE.ExtrudeGeometry(sh,{depth:.08,bevelEnabled:true,bevelThickness:.06,bevelSize:.06,bevelSegments:3,curveSegments:24});bodyG.rotateX(-Math.PI/2);
- const pb=new THREE.Mesh(bodyG,new THREE.MeshPhysicalMaterial({color:col("#9b6a4a"),transparent:true,opacity:.5,roughness:.5,depthWrite:false}));pb.renderOrder=4;Pl.add(pb);
- [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.07,12,8),mat("#1d1d1d"));e.position.set(s*.2,.22,-1.45);Pl.add(e);const w=new THREE.Mesh(new THREE.SphereGeometry(.1,12,8),mat("#ffffff"));w.position.set(s*.2,.18,-1.45);w.scale.y=.4;Pl.add(w)});
- const GUT="#ff9a3c",br=[[[0,.1,.05],[0,.1,-.6],[0,.1,-1.2]],[[0,.1,.05],[.25,.1,.6],[.3,.1,1.5]],[[0,.1,.05],[-.25,.1,.6],[-.3,.1,1.5]]];
- const brc=br.map(p=>vtube(p,{r:.07,color:GUT,parent:Pl,radial:10}).userData.curve);
- br.forEach((b,bi)=>{const c=brc[bi];for(let i=1;i<6;i++){const p=c.getPointAt(i/6);[-1,1].forEach(s=>{if(bi>0&&s===(bi===1?-1:1))return;vtube([[p.x,p.y,p.z],[p.x+s*.22,p.y,p.z+.05],[p.x+s*.36,p.y,p.z+.12]],{r:t=>.045*(1-t*.5),color:GUT,parent:Pl,radial:8})})}});
- const phC=new THREE.CatmullRomCurve3([V(.05,.1,.15),V(.3,.02,.45),V(.75,-.02,.7),V(1.15,.0,.85)]);vtube(phC,{r:.08,color:"#f7d3c2",parent:Pl,radial:12});
- Pl.updateMatrixWorld(true);Hy.updateMatrixWorld(true);
- // ---- الحركة: غذاء ← الفتحة ← التجويف ← فضلات تخرج من الفتحة نفسها
- const fo=new THREE.Mesh(new THREE.IcosahedronGeometry(.13,1),new THREE.MeshStandardMaterial({color:col("#4fb336"),emissive:col("#3a9a22"),emissiveIntensity:.6}));fo.visible=false;g.add(fo);
- const hyIn=new THREE.CatmullRomCurve3([V(-2.7+1.15,HH+.5,0),V(-2.7+.8,HH+.8,0),V(-2.7+.15,HH+.35,0),V(-2.7,HH+.05,0),V(-2.7,1.6,0),V(-2.7,.6,0)]);
- const hyOut=new THREE.CatmullRomCurve3([V(-2.7,.6,0),V(-2.7,1.7,0),V(-2.7,HH+.05,0),V(-2.7+.1,HH+.9,.1),V(-2.7+.25,HH+1.9,.2)]);
- const wl=v=>Pl.localToWorld(v.clone());const plIn=new THREE.CatmullRomCurve3([V(4.6,.1,1.4),wl(V(1.15,0,.85)),wl(V(.75,-.02,.7)),wl(V(.3,.02,.45)),wl(V(0,.1,.05))]);const plOut=new THREE.CatmullRomCurve3(plIn.points.slice().reverse().slice(0,4).concat([V(4.9,.15,1.5)]));
- const nf=particles({kind:"dust",rate:0,color:["#5fc23d","#b8f09a"],size:[.18,.05],life:[1.2,1.8],speed:[.15,.3],spread:1,max:200});nf.obj.material.depthTest=false;nf.obj.renderOrder=9;
- const wb=new THREE.InstancedMesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshStandardMaterial({color:col("#6b3e18"),emissive:col("#3a1d08"),emissiveIntensity:.4}),24);wb.frustumCulled=false;g.add(wb);wb.material.depthTest=false;wb.renderOrder=10;
- const fo2=fo.clone();fo2.material=fo.material;g.add(fo2);fo.material.depthTest=false;fo.renderOrder=10;
- const S={t:-1},M=new THREE.Matrix4(),P=new THREE.Vector3(),Qi=new THREE.Quaternion(),SC=new THREE.Vector3(),T=new THREE.Vector3();
- const brPts=brc.map(c=>c.getSpacedPoints(10).map(p=>Pl.localToWorld(p.clone())));
- onFrame((t,dt)=>{tents.forEach((m,k)=>m.rotation.y=Math.sin(t*1.3+k)*.05);if(S.t<0){wb.count=0;return}S.t+=dt;const u=S.t;
-  // ١) الغذاء يدخل (٠–٣ث)  ٢) يُهضم في التجويف (٣–٥٫٥ث)  ٣) الفضلات تخرج من الفتحة نفسها (٥٫٥–٩ث)
-  fo.visible=fo2.visible=u<3;if(u<3){hyIn.getPointAt(ease(u/3),T);fo.position.copy(T);plIn.getPointAt(ease(u/3),T);fo2.position.copy(T);const s=1-.3*u/3;fo.scale.setScalar(s);fo2.scale.setScalar(s)}
-  if(u>=3&&u<5.5){if(Math.random()<.7){nf.pos.set(-2.7,.6+Math.random()*1.6,0);nf.emit(1)}if(Math.random()<.8){const b=brPts[(Math.random()*3)|0];nf.pos.copy(b[(Math.random()*b.length)|0]);nf.emit(1)}}
-  wb.count=u>=5.5&&u<9.5?24:0;if(wb.count)for(let k=0;k<24;k++){const v=clamp((u-5.5)/3.2-k*.025,0,1),c=k<12?hyOut:plOut;c.getPointAt(v,P);P.x+=Math.sin(k*7.1)*.05;P.z+=Math.cos(k*3.3)*.05;SC.setScalar(v>0&&v<1?1:0);M.compose(P,Qi,SC);wb.setMatrixAt(k,M)}wb.instanceMatrix.needsUpdate=true;
-  if(u>3&&u-dt<=3){ui.result("التجويف الهضمي: تهضم الخلايا الغذاء وتمتص المواد المفيدة");snd("blub")}if(u>5.5&&u-dt<=5.5){ui.result("الفضلات تخرج من الفتحة نفسها التي دخل منها الغذاء!");snd("pop")}if(u>9.5){S.t=-1;ui.result("فتحة واحدة: للابتلاع وللإخراج معاً 👌")}});
- view(0,6.6,7.4,0,1.1,.3);
- return {group:g,feed:()=>{S.t=0;snd("whoosh");ui.result("الغذاء يدخل من الفتحة الوحيدة")},points:{hydra:[-2.7,HH+1.5,0],hMouth:[-2.7,HH+.15,0],hCavity:[-2.7,1.2,0],tentacle:[-2.7+1.25,HH+.4,0],planaria:wl(V(0,.2,-1.9)).toArray(),pharynx:wl(V(1.15,.05,.85)).toArray(),pGut:wl(V(-.35,.15,1.3)).toArray()}}}
+ const bg=new THREE.ExtrudeGeometry(sh,{depth:.06,bevelEnabled:true,bevelThickness:.05,bevelSize:.06,bevelSegments:3,curveSegments:28});bg.rotateX(-Math.PI/2);bg.translate(0,-.03,0);
+ const body=new THREE.Mesh(bg,new THREE.MeshPhysicalMaterial({color:col("#8c6346"),transparent:true,opacity:.6,roughness:.45,depthWrite:false,clearcoat:.4}));body.renderOrder=5;W.add(body);
+ [-1,1].forEach(q=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.075,12,8),mat("#ffffff"));e.position.set(q*.2,.07,-1.45);e.scale.y=.5;W.add(e);const pp=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),mat("#111"));pp.position.set(q*.2,.1,-1.47);W.add(pp)});
+ const GM=new THREE.MeshStandardMaterial({color:col("#ff8a2a"),emissive:col("#ff6a00"),emissiveIntensity:.15,roughness:.5});
+ const trunks=[[[0,.02,.05],[0,.02,-.6],[0,.02,-1.25]],[[0,.02,.05],[.24,.02,.6],[.3,.02,1.55]],[[0,.02,.05],[-.24,.02,.6],[-.3,.02,1.55]]].map(q=>new THREE.CatmullRomCurve3(q.map(v=>V(v))));
+ const tube=(c,r)=>{const m=new THREE.Mesh(new THREE.TubeGeometry(c,24,r,10),GM);W.add(m);return m};trunks.forEach(c=>tube(c,.05));
+ const twigs=[];trunks.forEach((c,ti)=>{for(let i=1;i<8;i++){const q=c.getPointAt(i/8);[-1,1].forEach(sd=>{if(ti===1&&sd<0||ti===2&&sd>0)return;const t=new THREE.CatmullRomCurve3([q.clone(),q.clone().add(V(sd*.14,0,.03)),q.clone().add(V(sd*.26,0,.09))]);tube(t,.028);twigs.push(t)})}});
+ const phC=new THREE.CatmullRomCurve3([V(0,0,.1),V(0,-.15,.12),V(0,-.3,.14),V(0,-.39,.15)]);const phM=new THREE.Mesh(new THREE.TubeGeometry(phC,16,.11,14),new THREE.MeshStandardMaterial({color:col("#ff7fa6"),emissive:col("#ff4f8b"),emissiveIntensity:.25,roughness:.5}));W.add(phM);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.095,.025,8,20),mat("#d9667f"));ring.rotation.x=Math.PI/2;W.add(ring);
+ const leaf=blob({r:.42,scale:[1.3,.35,1.1],color:"#3fbf2a",parent:P,seed:2,emissive:"#1f8a10",ei:.25});leaf.position.set(0,.05,.23);
+ const wl=v=>{W.updateMatrixWorld(true);return W.localToWorld(v.clone())};
+ const pf=new THREE.InstancedMesh(new THREE.SphereGeometry(.05,8,6),new THREE.MeshStandardMaterial({color:col("#4fd13a"),emissive:col("#2f9a1c"),emissiveIntensity:.5,depthTest:false,transparent:true}),60);pf.renderOrder=41;pf.frustumCulled=false;g.add(pf);pf.count=0;
+ const pw=new THREE.InstancedMesh(new THREE.SphereGeometry(.055,8,6),new THREE.MeshStandardMaterial({color:col("#7a4a1c"),depthTest:false,transparent:true}),30);pw.renderOrder=41;pw.frustumCulled=false;g.add(pw);pw.count=0;
+ const P_A=fatArrow([9.75,.05,1.35],[9.1,.25,.5],"#2fbf3a",P),P_B=fatArrow([8.9,.2,.5],[8.0,.05,1.4],"#8a4b17",P);P_A.position.x-=9;P_B.position.x-=9;P_A.visible=P_B.visible=false;
+ lab("planaria","البلاناريا (دودة مفلطحة)",[9,1.6,-2.2],"#7b4dff");lab("planaria","البلعوم يخرج من البطن: الفتحة الوحيدة",[10.5,.15,1.1],"#ff4f8b");lab("planaria","تجويف هضمي متفرّع",[7.6,1.15,-.9],"#14a06f");lab("planaria","الغذاء",[8.35,-.15,.75],"#3fbf2a");
+ const pStep=[lab("planaria","١ يدخل الغذاء من البلعوم",[10.3,-.05,1.8],"#2fbf3a"),lab("planaria","٢ يُهضم في التجويف المتفرّع",[9,1.5,1.2],"#e8a200"),lab("planaria","٣ تخرج الفضلات من البلعوم نفسه",[7.8,-.05,1.9],"#8a4b17")];
+ // ================= الحركة =================
+ const S={who:"hydra",t:-1},M=new THREE.Matrix4(),Qi=new THREE.Quaternion(),SC=new THREE.Vector3(),T=new THREE.Vector3(),U=new THREE.Vector3();
+ const steps=(arr,k)=>arr.forEach((l,i)=>l.visible=S.who&&i===k);
+ const show=w=>{S.who=w;S.t=-1;H.visible=w==="hydra";P.visible=w==="planaria";[hStep,pStep].forEach(a=>a.forEach(l=>l.visible=false));Object.entries(LBs).forEach(([k,ls])=>ls.forEach(l=>{if(!hStep.includes(l)&&!pStep.includes(l))l.visible=k===w}));
+  food.visible=false;hw.count=0;pf.count=0;pw.count=0;aIn.visible=aOut.visible=P_A.visible=P_B.visible=false;phM.scale.set(1,1,1);inM.emissiveIntensity=0;GM.emissiveIntensity=.15;
+  if(w==="hydra"){C.minAzimuthAngle=-.7;C.maxAzimuthAngle=.7;focusTo([0,3.2,0],[1.3,4.3,7.4])}else{C.minAzimuthAngle=-Infinity;C.maxAzimuthAngle=Infinity;focusTo([9,.4,.1],[12.4,2.2,4.4])}};
+ const focusTo=(t,p)=>{const k0=camera.position.clone(),t0=C.target.clone(),k1=V(p),t1=V(t);let u=0;const f=(tt,dt)=>{if(u>=1)return;u=Math.min(1,u+dt/.9);const e=ease(u);camera.position.lerpVectors(k0,k1,e);C.target.lerpVectors(t0,t1,e);camera.lookAt(C.target)};onFrame(f)};
+ onFrame((t,dt)=>{TP.forEach((pv,k)=>pv.rotation.z=Math.sin(t*1.2+k*1.3)*.08);
+  if(S.t<0)return;S.t+=dt;const u=S.t;
+  if(S.who==="hydra"){
+   // ١) ٠–٤ث: الغذاء تمسكه اللوامس ويدخل من الفم إلى التجويف
+   if(u<4.2){food.visible=true;hIn.getPointAt(ease(Math.min(1,u/4)),T);food.position.copy(T);aIn.visible=true;steps(hStep,0);if(u>1.2&&u<2.6)TP[0].rotation.z=.25*Math.sin((u-1.2)/1.4*Math.PI)}
+   // ٢) ٤–٧ث: يتحلل داخل التجويف، وتمتص الجدران المواد المفيدة
+   else if(u<7.2){aIn.visible=false;steps(hStep,1);const k=(u-4.2)/3;food.position.copy(cavW);food.scale.setScalar(Math.max(.05,1-k));inM.emissiveIntensity=.35+.25*Math.sin(u*6);if(Math.random()<.8){nu.pos.copy(cavW).sub(H.position);nu.emit(1)}}
+   // ٣) ٧–١١ث: الفضلات تصعد وتخرج من الفم نفسه
+   else if(u<11.2){food.visible=false;inM.emissiveIntensity=0;aOut.visible=true;steps(hStep,2);hw.count=18;for(let k=0;k<18;k++){const v=clamp((u-7.2)/3.2-k*.035,0,1);hOut.getPointAt(v,T);T.x+=Math.sin(k*5.1)*.06;T.z+=Math.cos(k*2.7)*.06;SC.setScalar(v>0&&v<1?1:0);M.compose(T,Qi,SC);hw.setMatrixAt(k,M)}hw.instanceMatrix.needsUpdate=true}
+   else{S.t=-1;hw.count=0;aOut.visible=false;steps(hStep,-1);ui.result("الهيدرا: فتحة واحدة يدخل منها الغذاء وتخرج منها الفضلات 👌")}
+   if(u>4.2&&u-dt<=4.2)ui.result("٢ يُهضم الغذاء داخل التجويف، وتمتص الخلايا المواد المفيدة");if(u>7.2&&u-dt<=7.2){ui.result("٣ تخرج الفضلات من الفم نفسه!");snd("pop")}}
+  else{
+   const base=wl(V(0,0,.1)),tip=wl(V(0,-.39,.15));
+   // ١) ٠–٤ث: البلعوم يمتد إلى الغذاء، والغذاء الأخضر يصعد فيه ثم ينتشر في الفروع
+   if(u<4.5){steps(pStep,0);P_A.visible=true;phM.scale.y=1;pf.count=60;for(let k=0;k<60;k++){const v=clamp((u-.4)/3.6-k*.012,0,1);const br=k<36?trunks[k%3]:twigs[k%twigs.length];
+     if(v<.4){U.lerpVectors(tip,base,v/.4);T.copy(U)}else{br.getPointAt((v-.4)/.6,U);T.copy(wl(U)).add(V(0,.03,0))}SC.setScalar(v>0?1:0);M.compose(T,Qi,SC);pf.setMatrixAt(k,M)}pf.instanceMatrix.needsUpdate=true;leaf.scale.setScalar(Math.max(.5,1-u/9))}
+   // ٢) ٤–٧ث: الهضم في التجويف المتفرّع (يتوهّج والغذاء يتلاشى)
+   else if(u<7.5){P_A.visible=false;steps(pStep,1);GM.emissiveIntensity=.4+.3*Math.sin(u*6);const k=1-(u-4.5)/3;for(let j=0;j<60;j++){pf.getMatrixAt(j,M);T.setFromMatrixPosition(M);SC.setScalar(Math.max(0,k));M.compose(T,Qi,SC);pf.setMatrixAt(j,M)}pf.instanceMatrix.needsUpdate=true}
+   // ٣) ٧–١١ث: الفضلات تعود إلى الوسط وتخرج من البلعوم نفسه
+   else if(u<11.5){pf.count=0;GM.emissiveIntensity=.15;P_B.visible=true;steps(pStep,2);pw.count=30;for(let k=0;k<30;k++){const v=clamp((u-7.5)/3.4-k*.02,0,1),br=trunks[k%3];
+     if(v<.5)br.getPointAt(1-v/.5*.95,U),T.copy(wl(U)).add(V(0,.03,0));else if(v<.8)T.lerpVectors(base,tip,(v-.5)/.3);else T.lerpVectors(tip,tip.clone().add(V(-.9,0,1.0)),(v-.8)/.2);
+     SC.setScalar(v>0&&v<1?1:0);M.compose(T,Qi,SC);pw.setMatrixAt(k,M)}pw.instanceMatrix.needsUpdate=true}
+   else{S.t=-1;pw.count=0;P_B.visible=false;steps(pStep,-1);ui.result("البلاناريا: البلعوم فتحة واحدة للابتلاع وللإخراج 👌")}
+   if(u>4.5&&u-dt<=4.5)ui.result("٢ يُهضم الغذاء في التجويف المتفرّع ويصل إلى كل الجسم");if(u>7.5&&u-dt<=7.5){ui.result("٣ تخرج الفضلات من البلعوم نفسه!");snd("pop")}}});
+ view(1.3,4.3,7.4,0,3.2,0);show("hydra");
+ return {group:g,show,feed:()=>{S.t=0;leaf.scale.setScalar(1);snd("whoosh");ui.result(S.who==="hydra"?"١ تمسك اللوامس الغذاء وتدخله من الفم":"١ يمدّ البلعوم من بطنه إلى الغذاء ويمتصه")}}}
 
 // ---------- الجهاز الإخراجي الحقيقي: الكليتان والحالبان والمثانة، الكبد، الرئتان، الأمعاء الغليظة، الجلد ----------
 // kit.realExcretion({}) → {show('all'|'skin'|'kidney'|'lungs'|'colon'|'liver'),ready}
@@ -735,7 +777,7 @@ function realExcretion(o={}){bodySky();const A=anatomy(Object.assign({systems:["
  onFrame(()=>{if(S.m==="skin"&&FX.skinV&&FX.skinV.length)for(let q=0;q<3;q++){const s=FX.skinV[(Math.random()*FX.skinV.length)|0];sweat.pos.copy(s[0]).addScaledVector(s[1],.03);sweat.dir.copy(s[1]);sweat.emit(1)}});
  return {ready:A.ready,anatomy:A,show}}
 
-const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,anatomy,realLungs,realDigestive,realBody,realExcretion,sponge,oneOpening,glb,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
+const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,anatomy,realLungs,realDigestive,realBody,realExcretion,sponge,oneOpening,fatArrow,glb,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
 
 function rs(){const w=innerWidth,h=innerHeight;R.setSize(w,h);comp.setSize(w,h);LR.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();PU.value=h*PR/(2*Math.tan(camera.fov*D2R/2))}
 addEventListener("resize",rs);rs();

@@ -8,6 +8,8 @@ import {EffectComposer} from "three/addons/postprocessing/EffectComposer.js";
 import {RenderPass} from "three/addons/postprocessing/RenderPass.js";
 import {UnrealBloomPass} from "three/addons/postprocessing/UnrealBloomPass.js";
 import {OutputPass} from "three/addons/postprocessing/OutputPass.js";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {MeshoptDecoder} from "three/addons/libs/meshopt_decoder.module.js";
 
 const PR=Math.min(2,devicePixelRatio||1);
 const R=new THREE.WebGLRenderer({antialias:true});
@@ -256,7 +258,8 @@ function earthLayers(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0
 // أدوات: أنبوب بنصف قطر متغيّر ولون متدرّج، كتلة عضوية، خلايا تتحرك على مسار، تأطير الكاميرا
 const WP=(g,p)=>{g.updateMatrixWorld(true);const v=g.localToWorld(V(p));return [v.x,v.y,v.z]};
 function view(px,py,pz,tx,ty,tz){camera.position.set(px,py,pz);C.target.set(tx,ty,tz);camera.lookAt(tx,ty,tz);C.minDistance=1.2}
-function bodySky(){sky("#bfe3ff","#fff4e3");hemi.groundColor=col("#ffe6cc");hemi.intensity=1.5;sunL.intensity=2.6}
+let FILL=null;function bodySky(){sky("#c9e7ff","#fff6ea");hemi.groundColor=col("#ffe6cc");hemi.intensity=1.6;sunL.intensity=2.2;R.toneMappingExposure=1.02;
+ if(!FILL){FILL=new THREE.DirectionalLight(0xffffff,1.5);scene.add(FILL);scene.add(FILL.target);onFrame(()=>{FILL.position.copy(camera.position).add(V(1.5,2.5,0));FILL.target.position.copy(C.target)})}}
 // vtube(points,{r:number|fn(t), color|colorFn(t), seg, radial, opacity, closed, parent})
 function vtube(points,o={}){const curve=points.getPointAt?points:new THREE.CatmullRomCurve3(points.map(p=>V(p)),!!o.closed,"centripetal");const S=o.seg||140,Rd=o.radial||16;
  const fr=curve.computeFrenetFrames(S,!!o.closed),pos=[],nor=[],uv=[],cl=[],idx=[],P=new THREE.Vector3(),N=new THREE.Vector3(),tc=new THREE.Color();
@@ -439,19 +442,43 @@ function worm(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]))
  return {group:g,feed:()=>{S.on=true;S.t=0;food.phase=0;snd("blub")},points:{mouth:WP(g,[-3.4,.6,0]),anus:WP(g,[3.4,.6,0]),gut:WP(g,[0,.95,.4]),clitellum:WP(g,[-1.2,.95,0])}}}
 
 // دوران مفتوح ودوران مغلق — kit.openClosed({}) → {points}
-function openClosed(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);bodySky();
- const A=new THREE.Group();A.position.set(-2.4,1.4,0);g.add(A);const B=new THREE.Group();B.position.set(2.4,1.4,0);g.add(B);
- blob({r:1,scale:[1.6,.75,.75],color:"#c9e27a",opacity:.45,seed:3,parent:A}).renderOrder=4;blob({r:.38,pos:[-1.75,.12,0],color:"#9cbf4a",opacity:.6,seed:4,parent:A});
- const dt=vtube([[1.3,.45,0],[.4,.55,0],[-.6,.5,0],[-1.25,.32,0]],{r:.075,color:"#7fa82e",parent:A});
- const hem=particles({kind:"dust",parent:A,pos:[-1.2,.3,0],area:.15,dir:[1,-.4,0],spread:1.2,speed:[.4,.9],life:[2.2,3.2],size:[.17,.12],color:["#c7e000","#a3c400"],rate:22,drag:.7,additive:false,max:400});
- movers(dt.userData.curve,{n:10,size:.05,speed:-.2,color:"#d7f000",parent:A});
- blob({r:1,scale:[1.5,.8,.6],color:"#ffb27a",opacity:.42,seed:6,parent:B}).renderOrder=4;const tail=new THREE.Mesh(new THREE.ConeGeometry(.55,.8,4),mat("#ffb27a",{transparent:true,opacity:.35,depthWrite:false}));tail.rotation.z=Math.PI/2;tail.position.set(1.8,0,0);tail.scale.set(1,1,.3);B.add(tail);
- const hb=heart({parent:B,pos:[-.75,-.35,0],scale:.28});
- const loopB=[[-.75,-.32,0],[-1.05,.05,.12],[-1.0,.45,.1],[-.6,.55,0],[.3,.5,0],[1.1,.3,0],[1.05,-.1,0],[.3,-.4,0],[-.4,-.45,0]];
- const cl=vtube(loopB,{closed:true,r:.05,colorFn:u=>bloodCol(u<.25?u/.25:u<.7?1:1-(u-.7)/.3),parent:B,seg:220,radial:10});
- movers(cl.userData.curve,{n:30,shape:"cell",size:.05,speed:.12,colorFn:u=>bloodCol(u<.25?u/.25:u<.7?1:1-(u-.7)/.3),parent:B});
- view(0,2.6,8.4,0,1.3,0);
- return {points:{open:WP(A,[0,1.1,0]),closed:WP(B,[0,1.15,0]),dorsal:WP(A,[.2,.75,.2]),sinus:WP(A,[.3,-.45,.5]),heartB:WP(B,[-.75,-.75,.2]),gills:WP(B,[-1.05,.45,.4])}}}
+// منظر جانبي ثابت: جرادة (يسار) قلبها أنبوب على الظهر والدم يخرج ويغمر الأعضاء، وسمكة (يمين) دمها داخل أوعية دائماً
+function openClosed(o={}){const g=new THREE.Group();put(g,o.parent);bodySky();C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.5;C.maxAzimuthAngle=.5;
+ const panel=(x,c)=>{const p=new THREE.Mesh(new THREE.BoxGeometry(5.4,3.6,.08),new THREE.MeshStandardMaterial({color:col(c),roughness:.9}));p.position.set(x,1.55,-1.1);g.add(p)};panel(-2.85,"#e6efd6");panel(2.85,"#dbe9f7");FILL&&(FILL.intensity=.7);hemi.intensity=1.25;
+ // ---- الجرادة
+ const A=new THREE.Group();A.position.set(-2.7,1.35,0);A.scale.setScalar(.88);g.add(A);
+ const gp=[];for(let k=0;k<=20;k++){const t=k/20;gp.push([-2+t*4,.05*Math.sin(t*3),0])}
+ const grad=t=>t<.16?.36:t<.2?.27:t<.42?.42:Math.max(.05,.4*(1-Math.pow((t-.42)/.58,1.4)));
+ const gb=vtube(gp,{r:grad,colorFn:t=>col(t<.2?"#3f7a10":"#58951c").multiplyScalar(.85+.15*Math.sin(t*120)),parent:A,seg:220,radial:28,opacity:.7,rough:.7});gb.material=new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,opacity:.5,depthWrite:false,roughness:.8});gb.renderOrder=4;
+ const ey=new THREE.Mesh(new THREE.SphereGeometry(.1,16,12),mat("#3b2a1a"));ey.position.set(-1.85,.2,.25);A.add(ey);
+ [[-1.9,.25,.12],[-1.9,.25,-.12]].forEach(q=>vtube([q,[-2.3,.75,q[2]*2],[-2.5,1.15,q[2]*3]],{r:.018,color:"#6f8c2d",parent:A,seg:16,radial:6}));
+ [[-1.1,0],[-.8,0]].forEach(([x])=>vtube([[x,-.3,.25],[x-.1,-.65,.4],[x-.25,-.9,.45]],{r:.03,color:"#7fa538",parent:A,seg:16,radial:8}));
+ vtube([[-.2,-.25,.3],[.7,.6,.4],[1.6,-.3,.45],[1.75,-.9,.45]],{r:t=>.07-.04*t,color:"#7fa538",parent:A,seg:40,radial:10});
+ const hv=[[1.75,.2,0],[1,.27,0],[.2,.27,0],[-.7,.2,0],[-1.35,.12,0]];const hT=vtube(hv,{r:.085,color:"#d91f2b",parent:A,seg:80,radial:12});
+ for(let k=0;k<5;k++){const os=new THREE.Mesh(new THREE.TorusGeometry(.08,.02,8,20),mat("#ffffff"));os.position.set(1.5-k*.42,.27,0);os.rotation.y=Math.PI/2;A.add(os)}
+ const hem=particles({kind:"dust",parent:A,pos:[-1.2,.05,0],area:.1,dir:[.3,-1,0],spread:.9,speed:[.15,.35],life:[2.6,3.4],size:[.22,.17],color:["#d4b000","#e6c800"],rate:20,drag:.6,additive:false,max:500});
+ const back=[];for(let k=0;k<26;k++)back.push({u:Math.random(),y:-.1-Math.random()*.2,z:(Math.random()-.5)*.4});const bm=new THREE.InstancedMesh(new THREE.SphereGeometry(.065,10,8),new THREE.MeshStandardMaterial({color:col("#e0bd00"),emissive:col("#a38a00"),emissiveIntensity:.25}),back.length);A.add(bm);
+ movers(hT.userData.curve,{n:10,size:.075,speed:.22,color:"#e0bd00",emit:"#a38a00",ei:.3,parent:A});
+ // ---- السمكة
+ const F=new THREE.Group();F.position.set(2.85,1.35,0);g.add(F);
+ const fp=[];for(let k=0;k<=20;k++){const t=k/20;fp.push([-2+t*3.6,0,0])}
+ const frad=t=>t<.12?.62*Math.sqrt(t/.12)*.9+.08:t<.6?.68-.25*Math.pow((t-.12)/.48,2)*.4:Math.max(.08,.6*(1-(t-.6)/.4)+.04);
+ const fb=vtube(fp,{r:frad,colorFn:t=>col("#d9591a").lerp(col("#f08a3c"),.4+.3*Math.sin(t*40)),parent:F,seg:200,radial:30,opacity:.62,rough:.7});fb.material=new THREE.MeshStandardMaterial({vertexColors:true,transparent:true,opacity:.45,depthWrite:false,roughness:.8});fb.scale.set(1,1,.42);fb.renderOrder=4;
+ const tl=new THREE.Mesh(new THREE.ConeGeometry(.7,.9,3),new THREE.MeshPhysicalMaterial({color:col("#f07a2c"),transparent:true,opacity:.6,depthWrite:false}));tl.rotation.z=-Math.PI/2;tl.position.set(2.0,0,0);tl.scale.set(1,1,.15);F.add(tl);
+ const fe=new THREE.Mesh(new THREE.SphereGeometry(.11,16,12),mat("#1d1d1d"));fe.position.set(-1.62,.18,.2);F.add(fe);
+ const gil=[];for(let k=0;k<4;k++){const a=vtube([[-1.25+k*.1,.38,.12],[-1.35+k*.1,0,.16],[-1.25+k*.1,-.38,.12]],{r:.035,color:"#e8323a",parent:F,seg:20,radial:8});gil.push(a)}
+ const Hf=heart({parent:F,pos:[-1.15,-.45,.05],scale:.2,rate:60});
+ const loopP=[[-1.15,-.45,.05],[-1.45,-.25,.1],[-1.4,.1,.12],[-1.2,.42,.1],[-.6,.48,.05],[.4,.42,0],[1.3,.25,0],[1.6,0,0],[1.3,-.28,0],[.4,-.42,0],[-.5,-.48,.05]];
+ const fc=u=>bloodCol(u<.12?0:u<.3?(u-.12)/.18:u<.75?1:1-(u-.75)/.25);
+ const vs=vtube(loopP,{closed:true,r:.065,colorFn:fc,parent:F,seg:260,radial:12});
+ movers(vs.userData.curve,{n:34,shape:"cell",size:.07,speed:.1,colorFn:fc,parent:F});
+ // أسهم الاتجاه
+ [[.5,.42],[1.45,.13],[.0,-.45]].forEach(([x,y],k)=>{const c=vs.userData.curve;const u=[.47,.66,.86][k];const p=c.getPointAt(u),t=c.getTangentAt(u);const ar=new THREE.Mesh(new THREE.ConeGeometry(.11,.26,16),mat("#ffffff"));ar.position.copy(p).add(V(0,0,.12));ar.quaternion.setFromUnitVectors(V(0,1,0),t);F.add(ar)});
+ const M4=new THREE.Matrix4();
+ onFrame((t,dt)=>{back.forEach((b,k)=>{b.u+=dt*.07;if(b.u>1)b.u-=1;const x=-1.3+b.u*2.9;M4.makeTranslation(x,b.y+.04*Math.sin(t*2+k),b.z);bm.setMatrixAt(k,M4)});bm.instanceMatrix.needsUpdate=true;hT.scale.y=1+.18*Math.max(0,Math.sin(t*5))});
+ const t1=addLabel("دوران مفتوح — الجرادة",-2.85,3.6,0),t2=addLabel("دوران مغلق — السمكة",2.85,3.6,0);t1.element.style.fontSize=t2.element.style.fontSize="17px";t1.element.style.background="#6f9a1f";t2.element.style.background="#2f6fd1";
+ view(0,1.7,8.3,0,1.5,0);
+ return {points:{open:[-2.85,3.3,0],closed:[2.85,3.3,0],dorsal:[-2.85+.2,1.35+.6,0],sinus:[-2.85,1.35-.62,.4],heartB:[2.85-1.15,1.35-.95,.2],gills:[2.85-1.3,1.35+.7,.2],body:[2.85+.9,1.35-.75,0]}}}
 
 // حرارة الجسم: متغيّر (سحلية) وثابت (طائر) — kit.thermo({}) → {set(temp),points}
 // الكاميرا ثابتة من الأمام (لا دوران تلقائي) حتى لا يتبادل اليمين واليسار، وكل حيوان معه ميزانه وبطاقته
@@ -521,7 +548,55 @@ function bodySystems(o={}){const g=new THREE.Group();put(g,o.parent);bodySky();b
  sway();view(0,2.75,9.4,0,2.65,0);
  return {show,digestive:D,lungs:Lu,heart:H,points:{stomach:D.points.stomach,lungs:Lu.points.lungR,heart:[.45,3.3,.5],intestine:D.points.smallIntestine}}}
 
-const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
+
+// ---------- نماذج تشريحية حقيقية (BodyParts3D © DBCLS، رخصة CC BY-SA 2.1 Japan) ----------
+// models/{resp,dig,heart,skin}.glb — إحداثيات الجسم: Y للأعلى (١ وحدة = ١٠ سم)، الأمام +Z، يسار المريض +X
+const MB=(()=>{try{return new URL("../models/",document.baseURI).href}catch(e){return "https://dars.majoodah.com/models/"}})();
+const GL=new GLTFLoader();GL.setMeshoptDecoder(MeshoptDecoder);const GLC={};
+const glb=n=>GLC[n]||(GLC[n]=new Promise((ok,no)=>GL.load(MB+n+".glb",g=>ok(g.scene),undefined,no)));
+const ORG={trachea:["#f1d2c4","القصبة الهوائية"],bronchi:["#fff0e8","الشعب الهوائية"],rul:["#f07592","الرئة اليمنى"],rml:["#f68aa3",""],rll:["#e9688a",""],lul:["#f07592","الرئة اليسرى"],lll:["#e9688a",""],diaphragm:["#c9584f","الحجاب الحاجز"],
+ esophagus:["#ec8a7c","المريء"],stomach:["#ec6079","المعدة"],duodenum:["#f6a6a6",""],jejunum:["#f9b0ae","الأمعاء الدقيقة"],ileum:["#f5a0a2",""],colon:["#e6a064","الأمعاء الغليظة"],rectum:["#d98d5e","المستقيم"],liver:["#9a3a2c","الكبد"],gallbladder:["#4f9a3c","المرارة"],pancreas:["#f2c46b","البنكرياس"],
+ heart:["#c8343f","القلب"],aorta:["#e2333b","الشريان الأبهر"],svc:["#3d6df2","الوريد الأجوف"],ivc:["#3d6df2",""],partery:["#3d6df2","الشريان الرئوي"],pvein:["#e2333b","الوريد الرئوي"],skin:["#ffd9c4",""]};
+function skinMat(op){return new THREE.ShaderMaterial({uniforms:{c:{value:col("#e9a07f")},k:{value:op}},transparent:true,depthWrite:false,side:THREE.FrontSide,
+ vertexShader:"varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
+ fragmentShader:"uniform vec3 c;uniform float k;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.2);gl_FragColor=vec4(c,clamp(f*k*4.5+0.025,0.0,0.75));}"})}
+function organMat(n,o){if(n==="skin")return skinMat(o&&o.opacity!=null?o.opacity:.14);const c=(ORG[n]||["#ddd"])[0];const tr=o&&o.opacity<1;return new THREE.MeshPhysicalMaterial({color:col(c).convertSRGBToLinear().convertLinearToSRGB(),roughness:n==="skin"?.6:.38,clearcoat:n==="skin"?0:.45,clearcoatRoughness:.35,sheen:.12,sheenColor:col("#ffe0e6"),transparent:!!tr,opacity:o&&o.opacity!=null?o.opacity:1,depthWrite:!tr,side:THREE.DoubleSide,emissive:col(c),emissiveIntensity:0})}
+// anatomy({systems:['resp','heart','dig'],skin:true,opacity:{name:0.5},labels:true}) → {group,ready,mesh(name),center(name),glow(name,on)}
+function anatomy(o={}){const g=new THREE.Group();put(g,o.parent);const sys=o.systems||["resp","heart","dig"];const M={},op=o.opacity||{};const LB={};
+ const A={group:g,mesh:n=>M[n],center:n=>{const b=new THREE.Box3().setFromObject(M[n]);return b.getCenter(new THREE.Vector3())},box:n=>new THREE.Box3().setFromObject(M[n]),labels:LB};
+ A.glow=(n,on)=>{const m=M[n];if(m)m.material.emissiveIntensity=on?.45:0};
+ A.ready=Promise.all(sys.concat(o.skin===false?[]:["skin"]).map(glb)).then(scs=>{scs.forEach(sc=>{sc=sc.clone(true);sc.traverse(m=>{if(m.isMesh){if(!m.geometry.attributes.normal)m.geometry.computeVertexNormals();const n=m.name||m.parent.name;m.name=n;const oo=n==="skin"?{opacity:o.skinOpacity??.13}:{opacity:op[n]};m.material=organMat(n,oo);m.castShadow=m.receiveShadow=false;if(n==="skin")m.renderOrder=6;if(oo.opacity<1)m.renderOrder=4;M[n]=m}});g.add(sc)});
+  g.updateMatrixWorld(true);
+  if(o.labels!==false)Object.keys(M).forEach(n=>{const t=(ORG[n]||[])[1];if(!t||(o.hide&&o.hide.includes(n)))return;const b=A.box(n),c=b.getCenter(new THREE.Vector3());const side=c.x<0?-1:1;const off=o.labelOff&&o.labelOff[n]||[0,0,0];
+   LB[n]=addLabel(t,(side<0?b.min.x-.25:b.max.x+.25)+off[0],c.y+off[1],c.z+.3+off[2])});
+  if(o.onReady)try{o.onReady(A)}catch(e){console.error(e)}return A});
+ A.ready.catch(e=>{console.error(e);const el=document.getElementById("e");if(el){el.textContent="تعذّر تحميل النموذج";el.style.display="flex"}});
+ return A}
+// الجهاز التنفسي الحقيقي يتنفس: kit.realLungs({}) → {setRate,ready}
+function realLungs(o={}){bodySky();const A=anatomy(Object.assign({systems:["resp","heart"],opacity:{rul:.6,rml:.6,rll:.6,lul:.6,lll:.6},hide:["svc","ivc","partery","pvein","aorta","rml","rll","lll"],labelOff:{bronchi:[-.1,-.5,0],heart:[.25,-.75,0],lul:[0,.55,0],rul:[0,.35,0],trachea:[0,.3,0]}},o));
+ const S={rate:14,ph:0,L:null,base:null};view(0,12.9,8.4,0,12.5,1);sway();A.ready.then(()=>["ivc","svc"].forEach(n=>{const m=A.mesh(n);if(m)m.visible=false}));
+ const air=[];
+ A.ready.then(()=>{const lobes=["rul","rml","rll","lul","lll","bronchi"].map(n=>A.mesh(n));const top=A.box("rul").max.y;const piv=new THREE.Group();piv.position.set(0,top,1.05);A.group.add(piv);lobes.forEach(m=>{const w=new THREE.Vector3();m.getWorldPosition(w);piv.attach(m)});S.L=piv;S.d=A.mesh("diaphragm");S.dy=S.d.position.y;
+  const t=A.box("trachea");const path=[[0,14.6,1.6],[0,14.25,1.35],[0,t.max.y,t.getCenter(new THREE.Vector3()).z],[0,(t.max.y+t.min.y)/2,1.0],[0,t.min.y,1.0]];
+  [-1,1].forEach(s=>{const c=new THREE.CatmullRomCurve3(path.concat([[s*.35,t.min.y-.35,1.0],[s*.65,t.min.y-1.0,1.05]]).map(p=>V(p)));air.push(movers(c,{n:12,size:.06,speed:0,color:"#2fb5ff",emit:"#2fb5ff",ei:.8,parent:A.group}),movers(c,{n:12,size:.06,speed:0,color:"#8d96a3",emit:"#8d96a3",ei:.3,parent:A.group}))})});
+ onFrame((t,dt)=>{S.ph+=dt*TAU*S.rate/60;const b=Math.sin(S.ph),inh=Math.cos(S.ph)>0;if(S.L){S.L.scale.set(1+.05*b,1+.06*b,1+.05*b);S.d.position.y=S.dy-.14*b}
+  air.forEach((m,k)=>{const o2=k%2===0;m.speed=(o2?inh:!inh)?(o2?.3:-.3)*S.rate/14:0;m.visible=(o2?inh:!inh)?12:0})});
+ return {ready:A.ready,anatomy:A,setRate:n=>{S.rate=+n||14}}}
+// الجهاز الهضمي الحقيقي + رحلة اللقمة (إضاءة العضو والكاميرا عليه)
+function realDigestive(o={}){bodySky();const A=anatomy(Object.assign({systems:["dig"],opacity:{liver:.82},hide:["ileum","duodenum"],labelOff:{jejunum:[.1,.2,0],colon:[0,-.3,0],gallbladder:[0,-.25,0],pancreas:[0,-.15,0]}},o));view(0,10.9,8.6,0,10.5,1.1);sway();
+ const STEPS=[["esophagus","المريء: تنزل اللقمة من الفم إلى المعدة"],["stomach","المعدة: الحمض والإنزيم يحلّلان الغذاء"],["liver","الكبد يفرز العصارة الصفراء… ويساعد البنكرياس بالإنزيمات"],["jejunum","الأمعاء الدقيقة: تُمتص المواد الغذائية إلى الدم"],["colon","الأمعاء الغليظة: يُمتص الماء من الفضلات"],["rectum","تُطرح الفضلات خارج الجسم"]];
+ const S={k:-1,t:0};const start=()=>{A.ready.then(()=>{S.k=0;S.t=0;snd("whoosh")})};
+ onFrame((t,dt)=>{if(S.k<0)return;if(S.t===0){Object.keys(ORG).forEach(n=>A.glow(n,false));const n=STEPS[S.k][0];A.glow(n,true);if(n==="liver")A.glow("pancreas",true);if(n==="jejunum"){A.glow("ileum",true);A.glow("duodenum",true)}ui.result(STEPS[S.k][1]);const c=A.center(n);focus(c.x,c.y,c.z,5.6)}
+  S.t+=dt;const m=A.mesh(STEPS[S.k][0]);if(m)m.material.emissiveIntensity=.3+.25*Math.sin(t*6);if(S.t>2.8){S.k++;S.t=0;snd("pop");if(S.k>=STEPS.length){S.k=-1;Object.keys(ORG).forEach(n=>A.glow(n,false));ui.result("انتهت الرحلة! 🎉");snd("ding");focus(0,10.5,1.1,7.5)}}});
+ return {ready:A.ready,anatomy:A,start}}
+// نظرة عامة: الأجهزة الثلاثة الحقيقية في الجسم
+function realBody(o={}){bodySky();const A=anatomy(Object.assign({systems:["resp","heart","dig"],opacity:{rul:.75,rml:.75,rll:.75,lul:.75,lll:.75},labels:false,skinOpacity:.14},o));view(0,11.2,9.5,0,10.9,1);sway();
+ const SY={resp:["trachea","bronchi","rul","rml","rll","lul","lll","diaphragm"],dig:["esophagus","stomach","duodenum","jejunum","ileum","colon","rectum","liver","gallbladder","pancreas"],circ:["heart","aorta","svc","ivc","partery","pvein"]};
+ const show=k=>A.ready.then(()=>{Object.entries(SY).forEach(([s,ns])=>ns.forEach(n=>{const m=A.mesh(n);if(m)m.visible=k==="all"||k===s}))});
+ const HB={on:true};onFrame(t=>{const h=A.mesh&&A.mesh("heart");if(h){const f=(t*1.2)%1;h.scale.setScalar(h.userData.s0||(h.userData.s0=h.scale.x));h.scale.multiplyScalar(1+.05*Math.exp(-Math.pow((f-.1)/.06,2)))}});
+ return {ready:A.ready,anatomy:A,show}}
+
+const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,anatomy,realLungs,realDigestive,realBody,glb,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
 
 function rs(){const w=innerWidth,h=innerHeight;R.setSize(w,h);comp.setSize(w,h);LR.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();PU.value=h*PR/(2*Math.tan(camera.fov*D2R/2))}
 addEventListener("resize",rs);rs();

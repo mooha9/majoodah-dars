@@ -510,8 +510,8 @@
    {
     "slide_index": 0,
     "title": "الأجهزة الثلاثة في جسمك",
-    "caption": "اضغط على كل جهاز لتراه وحده، وحرّك المجسم بإصبعك.",
-    "code": "var B=kit.bodySystems({});\naddLabel('جهاز الهضم',B.points.stomach[0]+.5,B.points.stomach[1],B.points.stomach[2]);\naddLabel('الرئتان',B.points.lungs[0]+.4,B.points.lungs[1]+.3,B.points.lungs[2]);\naddLabel('القلب',B.points.heart[0],B.points.heart[1],B.points.heart[2]);\nui.button('جهاز الهضم',function(){B.show('digestive');ui.result('جهاز الهضم: يحلّل الغذاء ليستفيد منه الجسم')});\nui.button('الجهاز التنفسي',function(){B.show('lungs');ui.result('الجهاز التنفسي: يزوّد الجسم بالأكسجين')});\nui.button('جهاز الدوران',function(){B.show('circ');ui.result('جهاز الدوران: ينقل الغذاء والأكسجين والفضلات')});\nui.button('الكل',function(){B.show('all');ui.result('الأجهزة الثلاثة تعمل معاً')});\nui.result('اضغط على جهاز لتراه وحده');"
+    "caption": "أعضاء حقيقية ثلاثية الأبعاد: اضغط على كل جهاز لتراه وحده، وحرّك المجسم بإصبعك. · النموذج: BodyParts3D © DBCLS (CC BY-SA)",
+    "code": "var B=kit.realBody({});\nui.button('جهاز الهضم',function(){B.show('dig');ui.result('جهاز الهضم: يحلّل الغذاء ليستفيد منه الجسم')});\nui.button('الجهاز التنفسي',function(){B.show('resp');ui.result('الجهاز التنفسي: يزوّد الجسم بالأكسجين')});\nui.button('جهاز الدوران',function(){B.show('circ');ui.result('جهاز الدوران: القلب والأوعية تنقل الغذاء والأكسجين والفضلات')});\nui.button('الكل',function(){B.show('all');ui.result('الأجهزة الثلاثة تعمل معاً في جسمك')});\nui.result('هذه أعضاء حقيقية من جسم الإنسان — اضغط على جهاز لتراه وحده');"
    },
    {
     "slide_index": 1,
@@ -522,8 +522,8 @@
    {
     "slide_index": 2,
     "title": "رحلة اللقمة في جهاز الهضم",
-    "caption": "اضغط «ابدأ رحلة اللقمة» وتابعها من الفم حتى الأمعاء الغليظة.",
-    "code": "var D=kit.digestive({});\nvar p=D.points;\naddLabel('الفم',p.mouth[0]+.45,p.mouth[1],p.mouth[2]);\naddLabel('المريء',p.esophagus[0]+.5,p.esophagus[1],p.esophagus[2]);\naddLabel('المعدة',p.stomach[0]+.4,p.stomach[1],p.stomach[2]);\naddLabel('الكبد',p.liver[0]-.3,p.liver[1],p.liver[2]);\naddLabel('الأمعاء الدقيقة',p.smallIntestine[0],p.smallIntestine[1],p.smallIntestine[2]);\naddLabel('الأمعاء الغليظة',p.largeIntestine[0]-.3,p.largeIntestine[1],p.largeIntestine[2]);\naddLabel('البنكرياس',p.pancreas[0]+.6,p.pancreas[1],p.pancreas[2]+.3);\nui.button('ابدأ رحلة اللقمة 🍎',D.start);\nui.result('اضغط لتتابع رحلة اللقمة داخل الجسم');"
+    "caption": "اضغط «ابدأ رحلة اللقمة»: يضيء كل عضو بالترتيب وتقترب الكاميرا منه. · النموذج: BodyParts3D © DBCLS (CC BY-SA)",
+    "code": "var D=kit.realDigestive({});\nui.button('ابدأ رحلة اللقمة 🍎',D.start);\nui.result('اضغط لتتابع رحلة اللقمة عضواً بعد عضو');"
    },
    {
     "slide_index": 3,
@@ -534,8 +534,8 @@
    {
     "slide_index": 4,
     "title": "الرئتان تتنفسان",
-    "caption": "راقب الحجاب الحاجز في الشهيق والزفير، وغيّر سرعة التنفس.",
-    "code": "var Lg=kit.lungs({});\nvar p=Lg.points;\naddLabel('الأنف',p.nose[0]+.35,p.nose[1],p.nose[2]);\naddLabel('الحنجرة',p.larynx[0]+.42,p.larynx[1],p.larynx[2]);\naddLabel('القصبة الهوائية',p.trachea[0]+.6,p.trachea[1],p.trachea[2]);\naddLabel('الشعب الهوائية',p.bronchi[0]-.15,p.bronchi[1]+.12,p.bronchi[2]);\naddLabel('الرئة اليمنى',p.lungL[0]-.2,p.lungL[1]+.35,p.lungL[2]);\naddLabel('الرئة اليسرى',p.lungR[0]+.2,p.lungR[1]+.35,p.lungR[2]);\naddLabel('القلب',p.heart[0]+.15,p.heart[1]-.05,p.heart[2]);\naddLabel('الحجاب الحاجز',p.diaphragm[0]+.25,p.diaphragm[1]-.12,p.diaphragm[2]);\nui.slider('سرعة التنفس',8,40,14,1,'نفَس/د',function(v){Lg.setRate(v)});\nui.button('ركض 🏃',function(){Lg.setRate(36);ui.result('أثناء الركض نتنفس أسرع لنحصل على أكسجين أكثر')});\nui.button('راحة',function(){Lg.setRate(14);ui.result('في الراحة نتنفس بهدوء')});\nui.result('شهيق: الحجاب الحاجز ينقبض وينزل، فتتمدد الرئتان');"
+    "caption": "رئتان حقيقيتان تتنفسان: راقب الحجاب الحاجز والشعب الهوائية، وغيّر سرعة التنفس. · النموذج: BodyParts3D © DBCLS (CC BY-SA)",
+    "code": "var Lg=kit.realLungs({});\nui.slider('سرعة التنفس',8,40,14,1,'نفَس/د',function(v){Lg.setRate(v)});\nui.button('ركض 🏃',function(){Lg.setRate(36);ui.result('أثناء الركض نتنفس أسرع لنحصل على أكسجين أكثر')});\nui.button('راحة',function(){Lg.setRate(14);ui.result('في الراحة نتنفس بهدوء')});\nui.result('شهيق: الحجاب الحاجز ينزل فتتمدد الرئتان — الأزرق أكسجين داخل');"
    },
    {
     "slide_index": 5,
@@ -547,7 +547,7 @@
     "slide_index": 6,
     "title": "دوران مفتوح ودوران مغلق",
     "caption": "قارن: أين يتحرك الدم في الجراد؟ وأين يتحرك في السمكة؟",
-    "code": "var O=kit.openClosed({});\nvar p=O.points;\naddLabel('جهاز دوران مفتوح (الجراد)',p.open[0],p.open[1]+.4,p.open[2]);\naddLabel('جهاز دوران مغلق (السمكة)',p.closed[0],p.closed[1]+.4,p.closed[2]);\naddLabel('القلب الأنبوبي',p.dorsal[0],p.dorsal[1]+.2,p.dorsal[2]);\naddLabel('الدم بين الأنسجة',p.sinus[0],p.sinus[1],p.sinus[2]);\naddLabel('القلب',p.heartB[0],p.heartB[1]-.1,p.heartB[2]);\naddLabel('الخياشيم',p.gills[0],p.gills[1]+.2,p.gills[2]);\nui.result('المفتوح: الدم يخرج إلى الأنسجة · المغلق: الدم داخل أوعية دائماً');"
+    "code": "var O=kit.openClosed({});\nvar p=O.points;\naddLabel('القلب الأنبوبي (على الظهر)',p.dorsal[0],p.dorsal[1],p.dorsal[2]);\naddLabel('الدم يخرج ويغمر الأعضاء',p.sinus[0],p.sinus[1],p.sinus[2]);\naddLabel('القلب',p.heartB[0],p.heartB[1],p.heartB[2]);\naddLabel('الخياشيم: يأخذ الدم الأكسجين',p.gills[0],p.gills[1],p.gills[2]);\naddLabel('أوعية إلى الجسم',p.body[0],p.body[1],p.body[2]);\nui.result('المفتوح: الدم يخرج من الأوعية إلى الأنسجة · المغلق: الدم داخل الأوعية دائماً');"
    },
    {
     "slide_index": 7,

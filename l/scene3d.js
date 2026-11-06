@@ -252,7 +252,225 @@ function earthLayers(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0
  onFrame(t=>{});const P=(r,ang)=>{const a=ang*D2R;return [g.position.x+Math.cos(a)*r*Rr*.72,g.position.y+Math.sin(a)*r*Rr,g.position.z+Math.cos(a)*r*Rr*.72]};
  return {group:g,points:{crust:P(.96,62),mantle:P(.74,36),outerCore:P(.4,8),innerCore:P(.14,-62)}}}
 
-const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
+// ---------- أجهزة الجسم (هضم، تنفس، دوران) ----------
+// أدوات: أنبوب بنصف قطر متغيّر ولون متدرّج، كتلة عضوية، خلايا تتحرك على مسار، تأطير الكاميرا
+const WP=(g,p)=>{g.updateMatrixWorld(true);const v=g.localToWorld(V(p));return [v.x,v.y,v.z]};
+function view(px,py,pz,tx,ty,tz){camera.position.set(px,py,pz);C.target.set(tx,ty,tz);camera.lookAt(tx,ty,tz);C.minDistance=1.2}
+function bodySky(){sky("#bfe3ff","#fff4e3");hemi.groundColor=col("#ffe6cc");hemi.intensity=1.5;sunL.intensity=2.6}
+// vtube(points,{r:number|fn(t), color|colorFn(t), seg, radial, opacity, closed, parent})
+function vtube(points,o={}){const curve=points.getPointAt?points:new THREE.CatmullRomCurve3(points.map(p=>V(p)),!!o.closed,"centripetal");const S=o.seg||140,Rd=o.radial||16;
+ const fr=curve.computeFrenetFrames(S,!!o.closed),pos=[],nor=[],uv=[],cl=[],idx=[],P=new THREE.Vector3(),N=new THREE.Vector3(),tc=new THREE.Color();
+ const rf=typeof o.r==="function"?o.r:()=>(o.r??.1),cf=typeof o.colorFn==="function"?o.colorFn:null;
+ for(let i=0;i<=S;i++){const t=i/S;curve.getPointAt(Math.min(t,1),P);const r=rf(t);if(cf)tc.copy(cf(t));
+  for(let j=0;j<=Rd;j++){const a=j/Rd*TAU,c=Math.cos(a),s=Math.sin(a);N.set(0,0,0).addScaledVector(fr.normals[i],c).addScaledVector(fr.binormals[i],s).normalize();
+   pos.push(P.x+N.x*r,P.y+N.y*r,P.z+N.z*r);nor.push(N.x,N.y,N.z);uv.push(t,j/Rd);if(cf)cl.push(tc.r,tc.g,tc.b)}}
+ for(let i=0;i<S;i++)for(let j=0;j<Rd;j++){const a=i*(Rd+1)+j,b=a+Rd+1;idx.push(a,b,a+1,b,b+1,a+1)}
+ const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));g.setAttribute("normal",new THREE.Float32BufferAttribute(nor,3));g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));if(cf)g.setAttribute("color",new THREE.Float32BufferAttribute(cl,3));g.setIndex(idx);
+ const m=new THREE.Mesh(g,new THREE.MeshPhysicalMaterial({color:cf?0xffffff:col(o.color||"#e98a8a"),vertexColors:!!cf,roughness:o.rough??.45,clearcoat:.35,clearcoatRoughness:.4,transparent:(o.opacity??1)<1,opacity:o.opacity??1,depthWrite:(o.opacity??1)>=1,emissive:col(o.emissive||0),emissiveIntensity:o.ei??0}));
+ m.userData.curve=curve;put(m,o.parent);return m}
+// كتلة عضوية ناعمة (كبد، رئة، خلية...)
+function blob(o={}){const g=new THREE.SphereGeometry(o.r||1,56,40),p=g.attributes.position,v=new THREE.Vector3(),sd=o.seed||1,amp=o.amp??.08;
+ for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const n=fbm(v.x*1.6+sd*3.1+v.z*.7,v.y*1.6+sd*1.7-v.z*.9);v.multiplyScalar(1+(n-.5)*amp*2);p.setXYZ(i,v.x,v.y,v.z)}
+ g.computeVertexNormals();const s=o.scale||[1,1,1];g.scale(s[0],s[1],s[2]);
+ const m=new THREE.Mesh(g,new THREE.MeshPhysicalMaterial({color:col(o.color||"#e07b7b"),roughness:o.rough??.5,clearcoat:.4,clearcoatRoughness:.35,transparent:(o.opacity??1)<1,opacity:o.opacity??1,depthWrite:(o.opacity??1)>=1,side:o.side||THREE.FrontSide,emissive:col(o.emissive||0),emissiveIntensity:o.ei??0}));
+ m.position.copy(V(o.pos||[0,0,0]));if(o.rot)m.rotation.set(o.rot[0]||0,o.rot[1]||0,o.rot[2]||0);put(m,o.parent);return m}
+// خلايا/جزيئات تتحرك على مسار: movers(curve,{n,speed,size,colorFn(u)|color,shape:'cell'|'ball',closed})
+function movers(curve,o={}){if(!curve.getPointAt)curve=new THREE.CatmullRomCurve3(curve.map(p=>V(p)),!!o.closed,"centripetal");const n=o.n||30,sz=o.size||.07;
+ const geo=o.shape==="cell"?new THREE.SphereGeometry(sz,16,10).scale(1,.42,1):new THREE.SphereGeometry(sz,14,10);
+ const m=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({color:0xffffff,roughness:.35,emissive:col(o.emit||0),emissiveIntensity:o.ei??0}),n);m.frustumCulled=false;put(m,o.parent);
+ const off=[],rot=[],M=new THREE.Matrix4(),Q=new THREE.Quaternion(),E=new THREE.Euler(),P=new THREE.Vector3(),SC=new THREE.Vector3(1,1,1),tc=new THREE.Color();
+ for(let i=0;i<n;i++){off.push(o.even===false?Math.random():i/n);E.set(Math.random()*3,Math.random()*3,Math.random()*3);rot.push(new THREE.Quaternion().setFromEuler(E))}
+ const F={mesh:m,curve,rate:1,speed:o.speed??.06,phase:0,on:true,visible:n,jitter:o.jitter??0,colorFn:o.colorFn||(()=>tc.set(o.color||"#e23b3b")),hide:o.hide};
+ onFrame((t,dt)=>{if(F.on)F.phase+=dt*F.speed*F.rate;for(let i=0;i<n;i++){let u=off[i]+F.phase;u=u-Math.floor(u);
+   if(i>=F.visible||(F.hide&&F.hide(u))){M.makeScale(0,0,0);m.setMatrixAt(i,M);continue}
+   curve.getPointAt(u,P);if(F.jitter){P.x+=Math.sin(i*12.9+t*2)*F.jitter;P.y+=Math.cos(i*7.3+t*1.7)*F.jitter;P.z+=Math.sin(i*3.1+t*2.3)*F.jitter}
+   Q.copy(rot[i]);M.compose(P,Q,SC);m.setMatrixAt(i,M);m.setColorAt(i,F.colorFn(u,i))}
+  m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true});return F}
+const BLUE=col("#3d6df2"),RED=col("#e2333b");
+function bloodCol(k,out){return (out||new THREE.Color()).copy(BLUE).lerp(RED,clamp(k,0,1))}
+
+// غلاف جسم الإنسان الشفاف — kit.bodyShell({parent,opacity})
+function bodyShell(o={}){const g=new THREE.Group();put(g,o.parent);const pr=[[0,0],[.5,.04],[.86,.35],[.95,1.1],[.88,1.9],[.92,2.8],[1.12,3.75],[1.05,4.12],[.55,4.36],[.27,4.45],[.25,4.72],[0,4.74]].map(p=>new THREE.Vector2(p[0],p[1]));
+ const m=new THREE.MeshPhysicalMaterial({color:col(o.color||"#ffc9a8"),transparent:true,opacity:o.opacity??.2,roughness:.35,depthWrite:false,side:THREE.DoubleSide,clearcoat:.6});
+ const tor=new THREE.Mesh(new THREE.LatheGeometry(pr,64),m);tor.scale.set(1,1,.58);g.add(tor);
+ const hd=new THREE.Mesh(new THREE.SphereGeometry(.5,40,30),m);hd.scale.set(.86,1.05,.95);hd.position.set(0,5.18,.05);g.add(hd);
+ [-1,1].forEach(s=>{const a=vtube([[s*1.02,3.85,0],[s*1.3,3.2,0],[s*1.42,2.3,.1],[s*1.45,1.5,.25]],{r:t=>.24-.08*t,color:o.color||"#ffc9a8",opacity:o.opacity??.2,parent:g});a.material.side=THREE.DoubleSide;a.material.depthWrite=false});
+ g.renderOrder=5;return g}
+
+// جهاز الهضم — kit.digestive({parent,pos,shell}) → {group,start(),points}
+function digestive(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);
+ const eso=[[0,4.72,.36],[0,4.45,.14],[.02,3.9,.06],[.06,3.1,.1],[.22,2.74,.16]];
+ const sto=[[.22,2.74,.16],[.46,2.7,.2],[.62,2.46,.22],[.58,2.14,.22],[.32,2.01,.22],[.06,2.1,.2],[-.08,2.2,.18]];
+ const si=[[-.08,2.2,.18],[-.22,2.04,.16],[-.5,1.82,.24]];for(let r=0;r<7;r++){const y=1.78-r*.12,L=r%2?[.48,-.5]:[-.5,.48];si.push([L[0]*.82,y,.16+(r%3)*.07],[0,y-.03,.3-(r%2)*.1],[L[1]*.82,y-.06,.18+(r%2)*.08])}si.push([-.42,.86,.22],[-.66,.84,.22]);
+ const li=[[-.66,.84,.22],[-.76,.98,.2],[-.78,1.5,.2],[-.74,1.94,.2],[-.3,2.0,.24],[.3,2.0,.24],[.76,1.92,.2],[.8,1.4,.2],[.78,.86,.2],[.5,.62,.18],[.12,.5,.12],[0,.32,.06],[0,.1,.04]];
+ const pink="#ffa7a7";
+ const E=vtube(eso,{r:.06,color:"#ff8f7f",parent:g});
+ const ST=vtube(sto,{r:t=>.07+.21*Math.sin(Math.PI*Math.min(1,t*1.15)),color:"#ff6f86",parent:g,seg:90});
+ const SI=vtube(si,{r:.058,color:pink,parent:g,seg:420,radial:12});
+ const LI=vtube(li,{r:t=>.11+.018*Math.sin(t*95),color:"#f0a057",parent:g,seg:260});
+ const LV=blob({r:.5,scale:[1.25,.62,.62],pos:[-.36,2.62,.22],rot:[0,0,-.18],color:"#b5473a",seed:3,parent:g});
+ blob({r:.09,scale:[1,1.4,1],pos:[-.18,2.38,.42],color:"#4f9a3c",seed:5,parent:g});
+ vtube([[.5,2.1,-.02],[.2,2.04,0],[-.08,2.01,.02]],{r:t=>.07-.03*t,color:"#f2c46b",parent:g});
+ const curves=[E,ST,SI,LI].map(x=>x.userData.curve);
+ const bolus=new THREE.Mesh(new THREE.SphereGeometry(.075,20,14),glowMat("#ffb347",.9));bolus.visible=false;g.add(bolus);
+ const nut=particles({kind:"spark",parent:g,rate:0,color:["#ff5252","#ff9a9a"],size:[.16,.04],life:[.8,1.3],speed:[.3,.6],spread:1,max:300});
+ const wat=particles({kind:"dust",parent:g,rate:0,color:["#4fb3ff","#9fd8ff"],size:[.14,.04],life:[.7,1.1],speed:[.25,.45],spread:1,max:200,additive:true});
+ const ST_TXT=["الفم: تُمضغ اللقمة وتختلط باللعاب","المريء: تنزل اللقمة إلى المعدة","المعدة: الحمض والإنزيم يحلّلان الغذاء","الأمعاء الدقيقة: تُمتص المواد الغذائية إلى الدم","الأمعاء الغليظة: يُمتص الماء","تُطرح الفضلات خارج الجسم"];
+ const DUR=[1.6,3.2,5.5,3.6],S={k:-1,t:0};
+ const start=()=>{S.k=0;S.t=0;S.m1=0;bolus.visible=true;bolus.scale.setScalar(1.25);ui.result(ST_TXT[0]);snd("whoosh");};
+ onFrame((t,dt)=>{ST.scale.setScalar(1);if(S.k<0)return;S.t+=dt;
+  if(S.k===0&&S.t<.9){bolus.position.copy(V(eso[0]));return}
+  if(S.k===0&&!S.m1){S.m1=1;ui.result(ST_TXT[1])}
+  const k=S.k,c=curves[k],d=DUR[k],u=clamp((S.t-(k===0?.9:0))/d,0,1);const p=c.getPointAt(k===1?ease(u):u);bolus.position.copy(p);
+  if(k===1){const w=1+.06*Math.sin(t*14);ST.scale.set(w,1,w);ST.position.set(-(w-1)*.4,0,0);bolus.scale.setScalar(1.25-.45*u);bolus.material.color.set("#ffb347").lerp(col("#e2c26a"),u)}
+  if(k===2){nut.pos.copy(p);nut.emit(2);bolus.scale.setScalar(.8-.25*u)}
+  if(k===3){wat.pos.copy(p);if(Math.random()<.5)wat.emit(1);bolus.material.color.set("#9a6b3c")}
+  if(u>=1){S.k++;S.t=0;if(S.k<4){ui.result(ST_TXT[S.k+1]);snd("pop")}else{ui.result(ST_TXT[5]);bolus.visible=false;S.k=-1;snd("ding")}}
+ });
+ if(o.shell!==false)bodyShell({parent:g});
+ if(!o.parent){bodySky();sway();view(0,2.6,7.2,0,2.45,0)}
+ return {group:g,start,points:{mouth:WP(g,[0,4.72,.4]),esophagus:WP(g,[0,3.8,.1]),stomach:WP(g,[.66,2.4,.32]),liver:WP(g,[-.62,2.72,.42]),pancreas:WP(g,[.42,2.0,.05]),smallIntestine:WP(g,[0,1.3,.38]),largeIntestine:WP(g,[-.82,1.4,.3]),gallbladder:WP(g,[-.18,2.32,.5])}}}
+
+// الجهاز التنفسي — kit.lungs({parent,pos,shell}) → {group,rate,setRate(n),points}
+function lungs(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);
+ const tr=vtube([[0,4.62,.16],[0,4.2,.13],[0,3.72,.12]],{r:.075,color:"#e9b4a8",parent:g});
+ for(let i=0;i<9;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(.08,.016,8,24),mat("#f6ddd2"));ring.rotation.x=Math.PI/2;ring.position.set(0,4.55-i*.095,.13);g.add(ring)}
+ const L=[];const br=(a,b,r,d,parent)=>{vtube([a,[(a[0]+b[0])/2,(a[1]+b[1])/2+.03,(a[2]+b[2])/2],b],{r:t=>r*(1-.3*t),color:"#ffe0d6",parent,seg:20,radial:8});if(d<=0)return;
+  const dx=b[0]-a[0],dy=b[1]-a[1];[[-.55,.0],[.45,.12],[.05,-.1]].forEach((q,i)=>{if(d<2&&i===2)return;const ang=Math.atan2(dy,dx)+q[0];const len=Math.hypot(dx,dy)*.68;const c=[b[0]+Math.cos(ang)*len,b[1]+Math.sin(ang)*len,b[2]+q[1]];br(b,c,r*.62,d-1,parent)})};
+ [-1,1].forEach(s=>{const lg=new THREE.Group();lg.position.set(s*.5,3.45,.12);g.add(lg);
+  const lb=blob({r:.5,scale:[.86,1.35,.74],pos:[0,0,0],color:"#ff8fab",opacity:.62,seed:s+4,amp:.05,parent:lg});lb.renderOrder=4;
+  br([-s*.5,.32,0],[0,.12,0],.05,3,lg);L.push(lg)});
+ const dia=new THREE.Mesh(new THREE.SphereGeometry(1,48,16,0,TAU,0,1.05),mat("#c4544f",{side:THREE.DoubleSide,roughness:.6}));dia.scale.set(.98,.34,.62);dia.position.set(0,2.62,.12);g.add(dia);
+ const path=[[0,5.12,.52],[0,4.95,.4],[0,4.6,.16],[0,3.8,.12]];const pl=[[0,3.72,.12],[-.32,3.68,.12],[-.5,3.4,.15],[-.48,3.05,.12]],pr=pl.map(p=>[-p[0],p[1],p[2]]);
+ const inL=new THREE.CatmullRomCurve3([...path,...pl.slice(1)].map(p=>V(p))),inR=new THREE.CatmullRomCurve3([...path,...pr.slice(1)].map(p=>V(p)));
+ const S={rate:14,ph:0};const breath=()=>Math.sin(S.ph);
+ const mk=(c,colr)=>movers(c,{n:14,size:.035,speed:0,color:colr,emit:colr,ei:.6,parent:g});
+ const o2=[mk(inL,"#2fb5ff"),mk(inR,"#2fb5ff")],co2=[mk(inL,"#8d96a3"),mk(inR,"#8d96a3")];
+ onFrame((t,dt)=>{const w=TAU*S.rate/60;S.ph+=dt*w;const b=breath(),db=Math.cos(S.ph);L.forEach(l=>l.scale.set(1+.07*b,1+.05*b,1+.07*b));dia.position.y=2.62-.13*b;dia.scale.y=.34-.06*b;
+  const inh=db>0;o2.forEach(m=>{m.speed=inh?.35*S.rate/14:0;m.visible=inh?14:0});co2.forEach(m=>{m.speed=inh?0:-.35*S.rate/14;m.visible=inh?0:14});});
+ if(o.shell!==false)bodyShell({parent:g});
+ if(!o.parent){bodySky();sway();view(0,3.5,6.8,0,3.45,0)}
+ return {group:g,setRate:n=>{S.rate=+n||14},get inhaling(){return Math.cos(S.ph)>0},points:{nose:WP(g,[0,5.12,.52]),trachea:WP(g,[0,4.2,.22]),bronchi:WP(g,[-.3,3.6,.2]),lungL:WP(g,[-.85,3.6,.25]),lungR:WP(g,[.85,3.6,.25]),diaphragm:WP(g,[.7,2.66,.42]),alveoli:WP(g,[.6,3.1,.3])}}}
+
+// قلب مبسّط — kit.heart({parent,pos,scale}) → {group,setRate,beat}
+function heart(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));g.scale.setScalar(o.scale||1);put(g,o.parent);
+ const R=blob({r:.5,scale:[.95,1.05,.9],pos:[-.27,.12,0],color:"#4a63d6",seed:7,amp:.04,parent:g}),Lf=blob({r:.52,scale:[.95,1.08,.9],pos:[.25,.1,0],color:"#d8333d",seed:8,amp:.04,parent:g});
+ const tip=new THREE.Mesh(new THREE.ConeGeometry(.62,1.05,40),mat("#c6303c",{roughness:.45}));tip.rotation.z=Math.PI+.12;tip.position.set(.06,-.55,0);g.add(tip);
+ const tipB=new THREE.Mesh(new THREE.ConeGeometry(.42,.8,40,1,false,Math.PI/2,Math.PI),mat("#4a63d6",{roughness:.45}));tipB.rotation.z=Math.PI+.12;tipB.position.set(-.08,-.45,.02);g.add(tipB);
+ const S={rate:o.rate||72,ph:0,beat:0};onFrame((t,dt)=>{S.ph+=dt*S.rate/60;const f=S.ph%1;const b=Math.exp(-Math.pow((f-.08)/.05,2))+.55*Math.exp(-Math.pow((f-.28)/.06,2));S.beat=b;g.scale.setScalar((o.scale||1)*(1+.075*b))});
+ return {group:g,setRate:n=>{S.rate=+n||72},get beat(){return S.beat}}}
+
+// الدورة الدموية الكاملة (مخطط ثلاثي الأبعاد) — kit.circulation({pos}) → {heart,setRate,follow(),points}
+function circulation(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);bodySky();
+ const H=heart({parent:g,pos:[0,1.6,0],scale:.9});
+ const lungBed=s=>{const lg=new THREE.Group();lg.position.set(s*2.35,3.7,0);g.add(lg);blob({r:.62,scale:[1,1.35,.7],color:"#ff9fb6",opacity:.5,seed:s+2,parent:lg});return lg};
+ lungBed(-1);lungBed(1);
+ const bodyB=new THREE.Group();bodyB.position.set(0,-1.15,0);g.add(bodyB);
+ for(let i=0;i<26;i++){const c=blob({r:.17,scale:[1,.8,1],pos:[(i%9-4)*.36+(Math.random()-.5)*.1,Math.floor(i/9)*-.3+(Math.random()-.5)*.08,(Math.random()-.5)*.6],color:"#ffd8a8",seed:i,amp:.1,parent:bodyB});c.material.roughness=.7}
+ // حلقتان (لكل رئة): جسم → قلب (يمين) → رئة → قلب (يسار) → جسم
+ const loop=s=>[[s*.25,-1.0,.25],[s*-.15-.55*(s<0?1:0)*0+(-.55),.1,.25],[-.42,1.25,.2],[-.45,2.25,.15],[s*1.2,3.0,.1],[s*2.0,3.25,.05],[s*2.35,3.75,0],[s*2.15,4.25,-.05],[s*1.4,3.9,-.1],[.42,2.5,-.15],[.35,1.95,-.12],[.75,1.0,-.15],[s*.8+.2,-.4,-.15],[s*.9,-1.15,0]];
+ const tcol=(u)=>{const a=.36,b=.52,c=.86;let k;if(u<a)k=0;else if(u<b)k=(u-a)/(b-a);else if(u<c)k=1;else k=1-(u-c)/(1-c);return bloodCol(k)};
+ const tubes=[-1,1].map(s=>{const m=vtube(loop(s),{closed:true,r:t=>{const lungZone=t>.38&&t<.55,bodyZone=t>.9||t<.05;return lungZone||bodyZone?.055:.1},colorFn:tcol,parent:g,seg:360,opacity:.6});m.renderOrder=3;return m});
+ const cells=tubes.map(m=>movers(m.userData.curve,{n:46,shape:"cell",size:.085,speed:.05,colorFn:(u)=>tcol(u),parent:g}));
+ const lab=s=>[[s*2.35,4.6,0]];
+ const S={rate:72};const setRate=n=>{S.rate=+n||72;H.setRate(S.rate);cells.forEach(c=>c.rate=S.rate/72)};
+ // تتبّع خلية دم واحدة
+ const tr=new THREE.Mesh(new THREE.SphereGeometry(.14,24,16),glowMat("#ffffff",.4));g.add(tr);tr.visible=false;const ring=new THREE.Mesh(new THREE.TorusGeometry(.24,.025,10,40),glowMat("#ffe14d",2));g.add(ring);ring.visible=false;
+ const F={on:false,u:0};const TXT=[[0,"في خلايا الجسم: تترك الأكسجين والغذاء وتأخذ الفضلات"],[.06,"يعود الدم غير المؤكسج في الأوردة إلى القلب"],[.2,"يضخّ القلب الدم غير المؤكسج إلى الرئتين"],[.38,"في الرئتين: يتخلّص من ثاني أكسيد الكربون ويحمل الأكسجين"],[.55,"يعود الدم المؤكسج إلى القلب"],[.66,"يضخّه القلب في الشرايين إلى كل أجزاء الجسم"],[.88,"يصل إلى الشعيرات الدموية في الجسم"]];let last=-1;
+ onFrame((t,dt)=>{if(!F.on)return;F.u=(F.u+dt*.05*S.rate/72)%1;const c=tubes[0].userData.curve,p=c.getPointAt(F.u);tr.position.copy(p);ring.position.copy(p);ring.lookAt(camera.position);tr.material.color.copy(tcol(F.u));tr.material.emissive.copy(tcol(F.u));
+  let k=0;TXT.forEach((x,i)=>{if(F.u>=x[0])k=i});if(k!==last){last=k;ui.result(TXT[k][1]);snd("pop")}});
+ return {group:g,heart:H,setRate,follow:()=>{F.on=true;tr.visible=ring.visible=true;F.u=0;last=-1},points:{heart:WP(g,[0,2.45,.4]),lungL:WP(g,[-2.35,4.6,0]),lungR:WP(g,[2.35,4.6,0]),body:WP(g,[0,-1.75,.3]),artery:WP(g,[1.05,.6,-.1]),vein:WP(g,[-.9,.5,.25]),capLung:WP(g,[-2.1,3.15,.2]),capBody:WP(g,[1.6,-1.1,0])}}}
+
+// الحويصلات الهوائية وتبادل الغازات — kit.alveoli({pos}) → {breathe(),points}
+function alveoli(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);bodySky();
+ vtube([[0,5,0],[0,4.1,0],[.05,3.2,0],[0,2.75,0]],{r:t=>.32-.1*t,color:"#f2b8ad",parent:g,opacity:.85});
+ const sacs=[];const SP=[[0,2.1,0],[-.75,1.85,.2],[.75,1.85,.15],[-.5,1.2,.35],[.5,1.2,.3],[0,1.0,-.2],[-.85,1.1,-.35],[.85,1.15,-.35],[0,1.55,.6],[0,2.0,-.6]];
+ SP.forEach((p,i)=>{const b=blob({r:.52,pos:p,color:"#ff9fb6",opacity:.55,seed:i+1,amp:.06,parent:g});b.renderOrder=4;sacs.push(b)});
+ const cap=[];const mkCap=(z,ph)=>{const pts=[];for(let i=0;i<=40;i++){const a=i/40;const x=-2.6+a*5.2,y=.9+Math.sin(a*Math.PI)*1.2+.25*Math.sin(a*TAU*2+ph),zz=z+.55*Math.cos(a*TAU*1.5+ph);pts.push([x,y,zz])}return pts};
+ const capCol=u=>bloodCol((u-.25)/.5);
+ [[.75,0],[-.75,1.4],[.1,2.6]].forEach(q=>{const m=vtube(mkCap(q[0],q[1]),{r:.075,colorFn:capCol,parent:g,seg:200,radial:10});cap.push(m);movers(m.userData.curve,{n:22,shape:"cell",size:.07,speed:.07,colorFn:capCol,parent:g})});
+ const O2=particles({kind:"dust",parent:g,pos:[0,1.6,0],area:.55,dir:[0,-1,0],spread:1.2,speed:[.35,.7],life:[1.2,1.8],size:[.2,.12],color:["#2fb5ff","#7fd3ff"],rate:26,additive:true,max:300});
+ const CO=particles({kind:"dust",parent:g,pos:[0,1.0,0],area:1.2,dir:[0,1,0],spread:.35,speed:[.6,1],life:[1.6,2.4],size:[.18,.1],color:["#9aa3ad","#c9ced4"],rate:18,additive:false,max:300});
+ const S={b:1};onFrame((t,dt)=>{const k=1+.05*Math.sin(t*2.2)*S.b;sacs.forEach(s=>s.scale.setScalar(k))});
+ view(0,2.4,7.6,0,1.9,0);
+ return {group:g,o2:O2,co2:CO,points:{bronchiole:WP(g,[.38,3.9,0]),alveolus:WP(g,[.6,2.3,.5]),capillary:WP(g,[2.2,1.3,.7]),o2:WP(g,[-.4,.6,.6]),co2:WP(g,[.3,2.6,.5])}}}
+
+// دودة الأرض (جهاز هضمي أنبوبي بفتحتين) — kit.worm({pos}) → {feed(),points}
+function worm(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);
+ const pts=[];for(let i=0;i<=24;i++){const a=i/24;pts.push([-3.4+a*6.8,.42+.08*Math.sin(a*9),.55*Math.sin(a*TAU*1.1)])}
+ const skin=vtube(pts,{r:t=>.42*Math.pow(Math.sin(Math.PI*clamp(t*1.02,0,1)),.35)*(t>.28&&t<.36?1.12:1)*(1+.06*Math.sin(t*170)),colorFn:t=>col(t>.28&&t<.36?"#ff8f80":"#ffb3a8").multiplyScalar(.92+.08*Math.sin(t*170)),parent:g,seg:420,radial:20,opacity:.78});skin.renderOrder=4;
+ const gut=vtube(pts.map(p=>[p[0],p[1],p[2]]),{r:t=>.12*Math.pow(Math.sin(Math.PI*clamp(t,0,1)),.2),color:"#c4673f",parent:g,seg:300,radial:10});
+ const food=movers(gut.userData.curve,{n:26,size:.07,speed:0,color:"#4b2e1a",parent:g,jitter:.02});food.visible=0;
+ const S={on:false,t:0};onFrame((t,dt)=>{g.position.x=(o.pos?o.pos[0]:0)+Math.sin(t*.8)*.06;if(!S.on)return;S.t+=dt;food.visible=Math.min(26,Math.floor(S.t*5));food.speed=.09});
+ return {group:g,feed:()=>{S.on=true;S.t=0;food.phase=0;snd("blub")},points:{mouth:WP(g,[-3.4,.6,0]),anus:WP(g,[3.4,.6,0]),gut:WP(g,[0,.95,.4]),clitellum:WP(g,[-1.2,.95,0])}}}
+
+// دوران مفتوح ودوران مغلق — kit.openClosed({}) → {points}
+function openClosed(o={}){const g=new THREE.Group();g.position.copy(V(o.pos||[0,0,0]));put(g,o.parent);bodySky();
+ const A=new THREE.Group();A.position.set(-2.4,1.4,0);g.add(A);const B=new THREE.Group();B.position.set(2.4,1.4,0);g.add(B);
+ blob({r:1,scale:[1.6,.75,.75],color:"#c9e27a",opacity:.45,seed:3,parent:A}).renderOrder=4;blob({r:.38,pos:[-1.75,.12,0],color:"#9cbf4a",opacity:.6,seed:4,parent:A});
+ const dt=vtube([[1.3,.45,0],[.4,.55,0],[-.6,.5,0],[-1.25,.32,0]],{r:.075,color:"#7fa82e",parent:A});
+ const hem=particles({kind:"dust",parent:A,pos:[-1.2,.3,0],area:.15,dir:[1,-.4,0],spread:1.2,speed:[.4,.9],life:[2.2,3.2],size:[.17,.12],color:["#c7e000","#a3c400"],rate:22,drag:.7,additive:false,max:400});
+ movers(dt.userData.curve,{n:10,size:.05,speed:-.2,color:"#d7f000",parent:A});
+ blob({r:1,scale:[1.5,.8,.6],color:"#ffb27a",opacity:.42,seed:6,parent:B}).renderOrder=4;const tail=new THREE.Mesh(new THREE.ConeGeometry(.55,.8,4),mat("#ffb27a",{transparent:true,opacity:.35,depthWrite:false}));tail.rotation.z=Math.PI/2;tail.position.set(1.8,0,0);tail.scale.set(1,1,.3);B.add(tail);
+ const hb=heart({parent:B,pos:[-.75,-.35,0],scale:.28});
+ const loopB=[[-.75,-.32,0],[-1.05,.05,.12],[-1.0,.45,.1],[-.6,.55,0],[.3,.5,0],[1.1,.3,0],[1.05,-.1,0],[.3,-.4,0],[-.4,-.45,0]];
+ const cl=vtube(loopB,{closed:true,r:.05,colorFn:u=>bloodCol(u<.25?u/.25:u<.7?1:1-(u-.7)/.3),parent:B,seg:220,radial:10});
+ movers(cl.userData.curve,{n:30,shape:"cell",size:.05,speed:.12,colorFn:u=>bloodCol(u<.25?u/.25:u<.7?1:1-(u-.7)/.3),parent:B});
+ view(0,2.6,8.4,0,1.3,0);
+ return {points:{open:WP(A,[0,1.1,0]),closed:WP(B,[0,1.15,0]),dorsal:WP(A,[.2,.75,.2]),sinus:WP(A,[.3,-.45,.5]),heartB:WP(B,[-.75,-.75,.2]),gills:WP(B,[-1.05,.45,.4])}}}
+
+// حرارة الجسم: متغيّر (سحلية) وثابت (طائر) — kit.thermo({}) → {set(temp),points}
+function thermo(o={}){const g=new THREE.Group();put(g,o.parent);ground({color:"#e8c98a",color2:"#d9b46e",size:16,flat:5});const sunO=sun({pos:[-4,6.5,-5],size:.75});
+ const rock=blob({r:.9,scale:[1.4,.5,1],pos:[-2.3,.2,0],color:"#a08c7a",seed:9,amp:.15,parent:g});
+ const Lz=new THREE.Group();Lz.position.set(-2.3,.62,0);g.add(Lz);const lc="#6aa84f";
+ const lb=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.75,8,16),mat(lc,{roughness:.6}));lb.rotation.z=Math.PI/2;Lz.add(lb);
+ const lh=blob({r:.18,scale:[1.4,.8,1],pos:[-.62,.04,0],color:lc,seed:2,parent:Lz});const lt=vtube([[.45,0,0],[.9,-.03,.1],[1.35,-.06,.3],[1.6,-.08,.55]],{r:t=>.13*(1-t)+.01,color:lc,parent:Lz});
+ [[-.3,1],[.3,1],[-.3,-1],[.3,-1]].forEach(q=>{const l=new THREE.Mesh(new THREE.CapsuleGeometry(.05,.2,4,8),mat(lc));l.position.set(q[0],-.12,q[1]*.22);l.rotation.x=q[1]*.9;Lz.add(l)});
+ [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.035,10,8),mat("#111"));e.position.set(-.72,.1,s*.1);Lz.add(e)});
+ const Bd=new THREE.Group();Bd.position.set(2.2,0,0);g.add(Bd);const bc="#4e8fd8";
+ const bb=blob({r:.42,scale:[1.25,.95,.9],pos:[0,.75,0],color:bc,seed:5,amp:.04,parent:Bd});blob({r:.25,pos:[-.45,1.15,0],color:bc,seed:6,amp:.03,parent:Bd});
+ const bk=new THREE.Mesh(new THREE.ConeGeometry(.07,.22,12),mat("#f2a33a"));bk.rotation.z=Math.PI/2;bk.position.set(-.75,1.13,0);Bd.add(bk);
+ [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),mat("#111"));e.position.set(-.6,1.22,s*.12);Bd.add(e);const w=blob({r:.3,scale:[1.3,.5,.25],pos:[.05,.8,s*.36],color:"#3b78c2",seed:s+8,parent:Bd});w.rotation.x=s*.2;
+  const lg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.42,8),mat("#f2a33a"));lg.position.set(0,.2,s*.12);Bd.add(lg)});
+ const tm=(x)=>{const tg=new THREE.Group();tg.position.set(x,0,1.1);g.add(tg);const gl=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.9,20),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.25,roughness:.05,depthWrite:false}));gl.position.y=1.15;tg.add(gl);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.16,20,14),glowMat("#e8262b",.5));bulb.position.y=.18;tg.add(bulb);const colm=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,1,12),glowMat("#e8262b",.5));colm.geometry.translate(0,.5,0);colm.position.y=.25;tg.add(colm);return colm};
+ const tL=tm(-1.1),tB=tm(3.3);const lbL=addLabel("",-1.1,2.35,1.1),lbB=addLabel("",3.3,2.35,1.1);
+ const S={env:25};const set=v=>{S.env=+v;const lzT=clamp(S.env,0,45),bT=41;tL.scale.y=lzT/45*1.7+.02;tB.scale.y=bT/45*1.7;lbL.element.textContent=Math.round(lzT)+"° سحلية";lbB.element.textContent=bT+"° طائر";
+  sunO.children[1].intensity=8+S.env*.9;sunL.intensity=.8+S.env/30;scene.background=canvasTex(2,256,(gx)=>{const gr=gx.createLinearGradient(0,0,0,256);const top=new THREE.Color("#8fb6d9").lerp(new THREE.Color("#ffb36b"),S.env/45);gr.addColorStop(0,"#"+top.getHexString());gr.addColorStop(1,"#fff1dc");gx.fillStyle=gr;gx.fillRect(0,0,2,256)});
+  ui.result(S.env<15?"الجو بارد: حرارة السحلية انخفضت فصارت بطيئة، والطائر حرارته ثابتة":S.env>35?"الجو حار: حرارة السحلية ارتفعت فتختبئ تحت الصخور، والطائر يتخلص من الحرارة":"حرارة السحلية تساوي حرارة الجو، والطائر ثابت عند ٤١°")};
+ onFrame((t,dt)=>{const act=clamp((S.env-8)/25,0,1);lt.rotation.y=Math.sin(t*3)*.25*act;Lz.position.x=-2.3+Math.sin(t*1.5)*.15*act;Bd.children[0].scale.y=1+.02*Math.sin(t*4)});
+ view(0,3.2,8.6,.4,1,0);set(25);
+ return {set,points:{lizard:[-2.3,1.2,0],bird:[2.2,1.75,0],rock:[-2.3,.15,.9]}}}
+
+// تجربة امتصاص الورق للماء — kit.paperTest({}) → {dip(),reset(),points}
+function paperTest(o={}){const g=new THREE.Group();put(g,o.parent);bodySky();
+ const tb=new THREE.Mesh(new THREE.BoxGeometry(9,.25,3.2),mat("#f2d36b",{roughness:.7}));tb.position.y=-.13;g.add(tb);
+ const P=[{n:"مناشف من الألياف",c:"#ffffff",a:9},{n:"مناشف عادية",c:"#f4f1e6",a:6},{n:"ورق تجليد",c:"#e05b4b",a:1},{n:"ورق طباعة",c:"#f7f7ff",a:3}];
+ const tick=canvasTex(64,512,(gx,w,h)=>{gx.clearRect(0,0,w,h);gx.strokeStyle="rgba(30,40,60,.85)";gx.lineWidth=3;for(let i=0;i<=20;i++){const y=h-20-i*(h-40)/20;gx.beginPath();gx.moveTo(0,y);gx.lineTo(i%5?18:34,y);gx.stroke()}});
+ const items=P.map((p,i)=>{const x=-3.3+i*2.2;const cy=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,3,32,1,true),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.22,roughness:.05,side:THREE.DoubleSide,depthWrite:false,map:tick}));cy.position.set(x,1.5,0);g.add(cy);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,.08,32),mat("#e8eef5"));base.position.set(x,.04,0);g.add(base);
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,1,32),new THREE.MeshPhysicalMaterial({color:col("#4aa8ff"),transparent:true,opacity:.6,roughness:.1,depthWrite:false}));w.geometry.translate(0,.5,0);w.position.set(x,.08,0);w.scale.y=2;g.add(w);
+  const st=new THREE.Mesh(new THREE.BoxGeometry(.32,2.1,.02),mat(p.c,{roughness:.9,side:THREE.DoubleSide}));st.position.set(x,4.2,0);g.add(st);
+  addLabel(p.n,x,3.35,.7);return {x,w,st,p,lvl:2}});
+ const S={t:-1};const dip=()=>{if(S.t>=0)return;S.t=0;snd("blub");ui.result("نغمس الأشرطة دقيقة كاملة… راقب مستوى الماء")};
+ const reset=()=>{S.t=-1;items.forEach(it=>{it.w.scale.y=2;it.st.position.y=4.2;it.st.material.color.set(it.p.c)});ui.result("اضغط «اغمس الأشرطة» لتبدأ التجربة")};
+ onFrame((t,dt)=>{if(S.t<0)return;S.t+=dt;const T=S.t;items.forEach(it=>{const down=clamp(T/1.2,0,1),up=clamp((T-5.2)/1.2,0,1),soak=clamp((T-1.2)/3.5,0,1);
+   it.st.position.y=4.2-1.95*ease(down)+1.95*ease(up);it.w.scale.y=2-it.p.a/10*ease(soak)*.95;it.st.material.color.set(it.p.c).lerp(col("#7fb8e6"),.55*soak*it.p.a/9)});
+  if(T>6.5&&S.t<1e8){S.t=1e9;snd("ding");ui.result("امتصّت مناشف الألياف أكثر كمية — مثل الأمعاء الغليظة تمتص الماء من الفضلات")}});
+ view(0,3.4,9.2,0,1.6,0);reset();
+ return {dip,reset,points:{}}}
+
+// نظرة عامة: جسم فيه الأجهزة الثلاثة — kit.bodySystems({}) → {show(name),points}
+function bodySystems(o={}){const g=new THREE.Group();put(g,o.parent);bodySky();bodyShell({parent:g,opacity:.18});
+ const D=digestive({parent:g,shell:false}),Lu=lungs({parent:g,shell:false});const H=heart({parent:g,pos:[.12,3.2,.3],scale:.28});
+ const vs=new THREE.Group();g.add(vs);[[[.12,3.25,.32],[.35,3.9,.3],[.3,4.6,.2],[.2,5.1,.1]],[[.15,3.0,.3],[.5,2.0,.32],[.55,1.0,.3],[.45,.1,.2]]].forEach(p=>vtube(p,{r:.035,color:"#e2333b",parent:vs}));
+ [[[-.05,3.1,.25],[-.35,3.9,.25],[-.3,4.6,.15],[-.2,5.1,.05]],[[-.05,2.95,.25],[-.5,2.0,.28],[-.55,1.0,.27],[-.45,.1,.2]]].forEach(p=>vtube(p,{r:.035,color:"#3d6df2",parent:vs}));
+ const sys={digestive:D.group,lungs:Lu.group,circ:[H.group,vs]};const all=[D.group,Lu.group,H.group,vs];
+ const show=n=>{all.forEach(x=>x.visible=n==="all");if(n==="digestive")D.group.visible=true;if(n==="lungs")Lu.group.visible=true;if(n==="circ"){H.group.visible=true;vs.visible=true}};
+ sway();view(0,2.75,9.4,0,2.65,0);
+ return {show,digestive:D,lungs:Lu,heart:H,points:{stomach:D.points.stomach,lungs:Lu.points.lungR,heart:[.45,3.3,.5],intestine:D.points.smallIntestine}}}
+
+const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
 
 function rs(){const w=innerWidth,h=innerHeight;R.setSize(w,h);comp.setSize(w,h);LR.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();PU.value=h*PR/(2*Math.tan(camera.fov*D2R/2))}
 addEventListener("resize",rs);rs();

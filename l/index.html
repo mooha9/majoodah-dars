@@ -92,7 +92,8 @@ main{background:radial-gradient(120px 46px at 12% 14%,#fff 60%,transparent 62%),
 .scr.book{max-width:1320px;background:#ff8a3d;border-radius:22px;padding:14px;box-shadow:0 6px 0 #d9661f,0 30px 60px rgba(30,60,90,.35);display:flex;gap:0;font-family:"Noto Naskh Arabic","IBM Plex Sans Arabic",serif;color:#2b2a26}
 .book .pg{flex:1;min-width:0;background:#fffaf0;position:relative;padding:26px 30px 44px}
 .book .pr{border-radius:4px 12px 12px 4px;box-shadow:inset 22px 0 26px -18px rgba(90,60,20,.35)}
-.book .pl{border-radius:12px 4px 4px 12px;box-shadow:inset -22px 0 26px -18px rgba(90,60,20,.35);display:flex;flex-direction:column;justify-content:center}
+.book .pl{border-radius:12px 4px 4px 12px;box-shadow:inset -22px 0 26px -18px rgba(90,60,20,.35);display:flex;flex-direction:column;justify-content:flex-start}
+.book .pl>.side:first-child{position:sticky;top:14px}
 .book .pr:after{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:linear-gradient(#e9dcc2,#d8c7a6,#e9dcc2)}
 .scr.book.turn{animation:none}.book.turn .pr{animation:turnR .5s ease}.book.turn .pl{animation:turnL .5s ease}
 @keyframes turnR{from{transform:perspective(1600px) rotateY(-22deg);transform-origin:left center;opacity:.3}to{transform:none;opacity:1}}
@@ -113,6 +114,15 @@ main{background:radial-gradient(120px 46px at 12% 14%,#fff 60%,transparent 62%),
 .opt:nth-child(4n+1){background:#fff3d6;border-color:#ffc23d}.opt:nth-child(4n+2){background:#e6f3ff;border-color:#7cbcff}.opt:nth-child(4n+3){background:#ffe8f1;border-color:#ff9cc0}.opt:nth-child(4n+4){background:#e7f8ec;border-color:#7fd8a0}
 .scr .opt.ok{background:#c9f5d6!important;border-color:#16a34a!important;animation:pop .35s}
 .scr .opt.no{background:#ffe0dc!important;border-color:#e5484d!important;animation:shake .35s}
+.pred label.pok{background:#c9f5d6;border-radius:10px;outline:2px solid #16a34a}
+.pred label.pno{background:#ffe0dc;border-radius:10px;outline:2px solid #e5484d}
+.opt.sel{background:#d7f3f1!important;border-color:var(--teal)!important;box-shadow:0 0 0 3px rgba(10,109,115,.25)}
+.lbl{position:relative;margin:12px auto 0;max-width:520px;border-radius:16px;overflow:hidden;border:2px solid var(--line);background:#fff}
+.lbl img{display:block;width:100%;height:auto}
+.lbl .pin{position:absolute;transform:translate(-50%,-50%);min-width:44px;min-height:34px;padding:4px 10px;border-radius:99px;border:3px dashed #ff7a2f;background:rgba(255,255,255,.92);font:inherit;font-weight:800;color:#ff7a2f;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.lbl .pin.done{border-style:solid;border-color:#16a34a;background:#c9f5d6;color:#11602f;cursor:default}
+.lbl .pin.no{animation:shake .35s;border-color:#e5484d}
+.lblpool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
 @keyframes pop{50%{transform:scale(1.04)}}@keyframes shake{25%{transform:translateX(6px)}75%{transform:translateX(-6px)}}
 .vc{border:3px solid #d9cdff;border-radius:18px}.vc:nth-child(3n+2){border-color:#ffc23d}.vc:nth-child(3n+3){border-color:#7fd8a0}.vc b{color:#5b34c9}
 .chipb{border-width:3px;border-radius:14px}
@@ -210,6 +220,7 @@ var SFX=(function(){var AC=null,M=null,MUTE=false,loops=[],NBF={};
   splash:function(){var c=ac(),t=c.currentTime;noise(c,t,.7,"bandpass",1600,400,.6,.005);tone(c,t,"sine",500,180,.3,.005,.25)},
   pop:function(){var c=ac(),t=c.currentTime;tone(c,t,"sine",420,980,.35,.005,.12)},
   click:function(){var c=ac(),t=c.currentTime;tone(c,t,"triangle",900,600,.15,.002,.05)},
+  page:function(){var c=ac(),t=c.currentTime;noise(c,t,.22,"lowpass",1400,500,.028,.04);tone(c,t+.02,"sine",880,0,.05,.01,.22);tone(c,t+.1,"sine",1320,0,.035,.01,.3)},
   whoosh:function(){var c=ac(),t=c.currentTime;noise(c,t,.16,"bandpass",1800,3200,.045,.02)},
   ding:function(){var c=ac(),t=c.currentTime;tone(c,t,"triangle",784,0,.35,.005,.25);tone(c,t+.12,"triangle",1175,0,.35,.005,.4)},
   buzz:function(){var c=ac(),t=c.currentTime;var o=tone(c,t,"square",170,140,.12,.01,.28)},
@@ -258,7 +269,7 @@ function stars(n,k){var h='<div class="stars">';for(var i=0;i<n;i++)h+='<i class
 var EM={"علوم":["🌋","🔬","🌍","🧪"],"رياضيات":["📐","➗","🔢"],"لغتي":["📖","✏️","🔤"],"لغة عربية":["📖","✏️","🔤"],"اجتماعيات":["🗺️","🏛️","🧭"],"إنجليزي":["🔤","🌍","🗣️"]};
 function deco(t,ix){var a=(L.activities||[]).length,q=(L.quiz||[]).length,h;
  if(t==="cover"){var e=(EM[L.subject]||["📚","⭐","✏️"]).slice();var TT=L.title+" "+(L.summary||""),TOP=[[/هضم|تنفس|دوران|قلب|جسم|رئة|دم/,"🫀"],[/نبات|زهر|بذور|ورق/,"🌱"],[/حيوان|حشر|طيور|أسماك/,"🦋"],[/ماء|مطر|طقس|سحاب/,"🌧️"],[/كوكب|شمس|قمر|فضاء|نجوم/,"🪐"],[/مغناط|كهرب|طاقة|ضوء|صوت/,"⚡"],[/بركان|زلزال|صخور|تربة/,"🌋"]];for(var ti=0;ti<TOP.length;ti++)if(TOP[ti][0].test(TT)){e[0]=TOP[ti][1];break}if(L.subject==="علوم"&&e[0]==="🌋"&&!/بركان|زلزال|صخور|تربة/.test(TT))e[0]="🔬";h='<div class="em">'+e[0]+'</div><h3>هيا نتعلّم!</h3><p>'+esc(L.title)+'</p><div class="stars">'+e.slice(1).join(" ")+'</div>'}
- else if(t==="warm")h='<div class="em">🤔</div><h3>فكّر قبل ما نبدأ</h3><p>ما فيه إجابة غلط هنا!</p>';
+ else if(t==="warm")h='<div class="em">🤔</div><h3>فكّر قبل ما نبدأ</h3><p>اختر إجابتك!</p>';
  else if(t==="vocab")h='<div class="em">🔤</div><h3>'+AN(L.vocabulary.length)+' كلمات جديدة</h3><p>اضغط على كل بطاقة واكتشف معناها</p>';
  else if(t==="slide")h='<div class="em">💡</div><h3>ركّز معي</h3><p>اقرأ الصفحة جيداً، بعدها نجرّب ونلعب</p>';
  else if(t==="act")h='<div class="em">🎯</div><h3>نشاط '+AN(ix+1)+' من '+AN(a)+'</h3><p>أجب صح واجمع النجوم!</p>'+stars(a,Object.keys(ACTD).length);
@@ -274,7 +285,7 @@ function show(i){if(!S.length)return;cur=Math.max(0,Math.min(S.length-1,i));var 
  if(!Lp.children.length){Lp.appendChild(deco(ty[0],ty[1]));Lp.classList.add("only-deco")}else if(ty[0]==="cover")Lp.insertBefore(deco("cover",0),Lp.firstChild);
  R.insertAdjacentHTML("beforeend",'<div class="pgno">'+AN(cur*2+1)+'</div>');Lp.insertAdjacentHTML("beforeend",'<div class="pgno">'+AN(cur*2+2)+'</div>');
  el.appendChild(R);el.appendChild(Lp);el.classList.remove("turn");void el.offsetWidth;el.classList.add("turn");
- if(SHOWN){SFX.play("stop");SFX.play("whoosh")}SHOWN=true;if(ty[0]==="result")setTimeout(function(){SFX.play("fanfare")},350);
+ if(SHOWN){SFX.play("stop");SFX.play("page")}SHOWN=true;if(ty[0]==="result")setTimeout(function(){SFX.play("fanfare")},350);
  $("#pg").style.width=((cur+1)/S.length*100)+"%";$("#cnt").textContent=AN(cur+1)+" / "+AN(S.length);$("#prev").disabled=cur===0;$("#next").textContent=cur===S.length-1?"من البداية":"التالي ←";
  document.querySelector("main").scrollTop=0}
 $("#bSnd").textContent=SFX.muted?"🔇":"🔊";$("#bSnd").addEventListener("click",function(){this.textContent=SFX.toggle()?"🔇":"🔊";if(!SFX.muted)SFX.play("pop")});
@@ -288,13 +299,16 @@ function cover(){var o=(L.objectives||[]).map(function(x){return "<li>"+esc(x)+"
  var d=div('<span class="kick">'+esc([L.subject,L.grade].filter(Boolean).join(" · ")||"درس تفاعلي")+'</span><h2 style="font-size:2.2em">'+esc(L.title)+'</h2>'+(L.summary?'<p style="font-size:1.1em;color:var(--muted)">'+esc(L.summary)+'</p>':'')+(o?'<h3 style="margin-top:14px">أهداف الدرس</h3><ul class="b">'+o+'</ul>':'')+
   (TEACH?'<div class="qr">'+qrHTML(studentUrl(),150)+'<div><b>رابط الطلاب</b><p class="nm" style="margin:4px 0 0;color:var(--muted)">يفتح الطلاب الدرس بمسح الرمز، ويحلّون الأنشطة والاختبار من جوالاتهم.</p></div></div>':'')+'<p class="brand">صُنع بـ <a href="https://dars.majoodah.com" target="_blank" rel="noopener">الدرس التفاعلي · مجودة</a></p>');return d}
 function warm(){var w=L.warmup,d=div('<span class="kick">تهيئة</span><h2>'+esc(w.prompt)+'</h2>'+(w.options&&w.options.length?'<div class="opts">'+w.options.map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>'}).join("")+'</div>':'<p style="color:var(--muted)">ناقشوا الإجابة قبل ما نبدأ الدرس 💬</p>'));
- $$(".opt",d).forEach(function(b){b.addEventListener("click",function(){$$(".opt",d).forEach(function(x){x.classList.remove("sel")});b.classList.add("sel")})});return d}
+ if(w.answer_index>=0)d.insertAdjacentHTML("beforeend",'<div class="fb"></div>');
+ $$(".opt",d).forEach(function(b){b.addEventListener("click",function(){$$(".opt",d).forEach(function(x){x.classList.remove("sel","ok","no")});if(!(w.answer_index>=0)){b.classList.add("sel");return}var ok=+b.dataset.i===w.answer_index,f=$(".fb",d);b.classList.add(ok?"ok":"no");f.className="fb "+(ok?"ok":"no");f.textContent=ok?(w.reveal||"أحسنت! ✓"):"فكّر مرة ثانية 🤔"})});return d}
 function vocab(){var d=div('<span class="kick">مفردات الدرس</span><h2>اضغط على البطاقة لتعرف المعنى</h2><div class="vocab">'+L.vocabulary.map(function(v){return '<div class="vc" tabindex="0"><b>'+esc(v.term)+'</b><span hidden>'+esc(v.meaning)+'</span></div>'}).join("")+'</div>');
  $$(".vc",d).forEach(function(c){function t(){var s=$("span",c);s.hidden=!s.hidden}c.addEventListener("click",t);c.addEventListener("keydown",function(e){if(e.key==="Enter")t()})});return d}
 function slide(s,i){var d=slide0(s,i),sc=scenesFor(i);if(s.formula)d.insertAdjacentHTML("beforeend",'<div class="formula">'+esc(s.formula)+'</div>');if(s.margin_note)d.insertAdjacentHTML("beforeend",'<div class="margin">'+esc(s.margin_note)+'</div>');
  var pr=s.predict;if(pr&&pr.question&&pr.options&&pr.options.length)d.appendChild(predict(pr,i));figsFor(i).forEach(function(f){var fg=figBox(f);if(!sc.length)fg.classList.add("side");d.appendChild(fg)});sc.forEach(function(x){var b=sceneBox(x);b.classList.add("side");d.appendChild(b)});if(!sc.length)$$(".ex,.formula,.margin,.pred",d).forEach(function(n){n.classList.add("side")});return d}
 function predict(pr,i){var w=div('<div class="pred"><small>توقّع قبل أن تجرّب</small><h3>'+esc(pr.question)+'</h3>'+pr.options.map(function(o,k){return '<label><input type="radio" name="pr'+i+'" value="'+k+'"> '+esc(o)+'</label>'}).join("")+'<div class="flap"><div class="ans"><b>'+(pr.answer_index>=0&&pr.options[pr.answer_index]!=null?"الإجابة: "+esc(pr.options[pr.answer_index]):"")+'</b><div>'+esc(pr.reveal||"")+'</div></div><div class="cov" role="button" tabindex="0">✋ ارفع الورقة لترى الإجابة</div></div></div>');
- var f=w.querySelector(".flap"),c=w.querySelector(".cov");function open(){var ch=w.querySelector("input:checked");if(!ch&&!TEACH){c.textContent="✍️ اختر توقعك أولاً";return}f.classList.add("open")}
+ var f=w.querySelector(".flap"),c=w.querySelector(".cov");function open(){var ch=w.querySelector("input:checked");if(!ch&&!TEACH){c.textContent="✍️ اختر توقعك أولاً";return}var was=f.classList.contains("open");f.classList.add("open");
+  if(ch&&!was&&pr.answer_index>=0){var ok=+ch.value===pr.answer_index,lb=ch.closest("label");if(lb)lb.classList.add(ok?"pok":"pno");try{ok?celebrate():oops()}catch(e){}}}
+ $$("input",w).forEach(function(r){r.addEventListener("change",function(){if(!f.classList.contains("open"))return;$$("label",w).forEach(function(x){x.classList.remove("pok","pno")});var ok=+r.value===pr.answer_index;r.closest("label").classList.add(ok?"pok":"pno");try{ok?celebrate():oops()}catch(e){}})});
  c.addEventListener("click",open);c.addEventListener("keydown",function(e){if(e.key==="Enter")open()});return w}
 function slide0(s,i){return div('<span class="kick">الشرح · '+AN(i+1)+'/'+AN(L.slides.length)+'</span><h2>'+esc(s.title)+'</h2><ul class="b">'+(s.bullets||[]).map(function(b){return "<li>"+esc(b)+"</li>"}).join("")+'</ul>'+(s.example?'<div class="ex"><b>مثال: </b>'+esc(s.example)+'</div>':'')+(TEACH&&s.teacher_note?'<div class="tn">💡 للمعلم: '+esc(s.teacher_note)+'</div>':''))}
 function figsFor(i){var n=(L.slides||[]).length;return (L.figures||[]).filter(function(f){return f&&f.src&&Math.max(0,Math.min(n-1,f.slide_index|0))===i})}
@@ -312,7 +326,7 @@ function sceneBox(x){var w=div('<div class="s3"><div class="s3h"><b>🧊 '+esc(x
  document.addEventListener("fullscreenchange",function(){fs.textContent=document.fullscreenElement===box?"✕ تصغير":"⛶ تكبير"});
  pl.addEventListener("click",function(){box.classList.add("live");SFX.play("pop");if(fr&&ready)go();else{want=true;load()}});
  f.appendChild(pl);if(TEACH||window.innerWidth>700)setTimeout(load,60);return w}
-var KIT=null;function kitText(){if(!KIT)KIT=fetch("scene3d.js?v=14").then(function(r){if(!r.ok)throw 0;return r.text()});return KIT}
+var KIT=null;function kitText(){if(!KIT)KIT=fetch("scene3d.js?v=15").then(function(r){if(!r.ok)throw 0;return r.text()});return KIT}
 function sceneDoc(code,kt){var c=JSON.stringify(String(code)).replace(/</g,"\\u003c");
  return '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\' \'unsafe-eval\' https://cdn.jsdelivr.net; style-src \'unsafe-inline\' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src https://cdn.jsdelivr.net https://dars.majoodah.com http://localhost:8765">'+
  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;800&display=swap"><style>html,body{margin:0;height:100%;overflow:hidden;background:#cdeeff;font-family:"Baloo Bhaijaan 2","IBM Plex Sans Arabic",Tahoma,sans-serif}canvas{display:block;touch-action:none}.lb{direction:rtl;background:#ff7a2f;color:#fff;padding:3px 12px;border-radius:99px;font-size:14px;font-weight:800;border:2px solid #fff;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.25)}#ui{position:absolute;right:10px;left:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:flex-start;direction:rtl;pointer-events:none}#ui>*{pointer-events:auto}.sl{background:rgba(255,255,255,.93);border-radius:12px;padding:6px 12px;display:flex;gap:8px;align-items:center;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.12)}.sl b{min-width:3.5em;text-align:center;color:#0a6d73}.sl input{width:130px;accent-color:#0a6d73}.bt{border:0;background:#ff7a2f;color:#fff;border-radius:99px;padding:9px 20px;box-shadow:0 4px 0 #d9561a!important;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}.bt:active{transform:scale(.97)}.rs{background:#fff;color:#5b34c9;border:2px solid #d9cdff;border-radius:12px;padding:7px 14px;font-weight:700;font-size:14px}#e{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#5b7476;font-size:14px;text-align:center;padding:20px}</style>'+
@@ -338,6 +352,10 @@ function act(a,i){
   var d6=div(head(a,i)+'<p style="margin:0">اختر العنصر ثم المجموعة المناسبة.</p><div class="pool">'+all.map(function(x,k){return '<button class="chipb" data-k="'+k+'">'+esc(x.t)+'</button>'}).join("")+'</div><div class="sortg">'+G.map(function(g,gi){return '<div class="grp" data-g="'+gi+'" tabindex="0" role="button"><h3>'+esc(g.name)+'</h3></div>'}).join("")+'</div><div class="fb"></div>'),placed=0;
   $$(".pool .chipb",d6).forEach(function(b){b.addEventListener("click",function(){$$(".pool .chipb",d6).forEach(function(x){x.classList.remove("sel")});b.classList.add("sel");pick=b})});
   $$(".grp",d6).forEach(function(g){g.addEventListener("click",function(){if(!pick)return;var x=all[+pick.dataset.k],f=$(".fb",d6);if(x.g===+g.dataset.g){var c=document.createElement("div");c.className="chipb done";c.style.marginTop="6px";c.textContent=x.t;g.appendChild(c);pick.remove();pick=null;placed++;f.className="fb ok";f.textContent=placed===all.length?"صنّفت الكل صح! ✓":"صحيح ✓"}else{pick.classList.add("no");setTimeout(function(){if(pick)pick.classList.remove("no")},600);f.className="fb no";f.textContent="مو هذي مجموعتها"}})});return d6}
+ if(a.type==="label"&&a.image){var LB=a.labels||[],mixL=shuffle(LB.map(function(l,k){return {t:l.text,k:k}})),pk=null,okn=0;
+  var d7=div(head(a,i)+'<p style="margin:0">اختر الكلمة ثم اضغط على مكانها في الصورة.</p><div class="lblpool">'+mixL.map(function(x){return '<button class="chipb" data-k="'+x.k+'">'+esc(x.t)+'</button>'}).join("")+'</div><div class="lbl"><img alt="'+esc(a.title||"")+'" src="'+esc(a.image)+'">'+LB.map(function(l,k){return '<button class="pin grp" data-k="'+k+'" style="left:'+(l.x*100)+'%;top:'+(l.y*100)+'%">'+AN(k+1)+'</button>'}).join("")+'</div><div class="fb"></div>');
+  $$(".lblpool .chipb",d7).forEach(function(b){b.addEventListener("click",function(){$$(".lblpool .chipb",d7).forEach(function(x){x.classList.remove("sel")});b.classList.add("sel");pk=b})});
+  $$(".pin",d7).forEach(function(p){p.addEventListener("click",function(){if(!pk||p.classList.contains("done"))return;var f=$(".fb",d7);if(pk.dataset.k===p.dataset.k){p.textContent=LB[+p.dataset.k].text;p.classList.add("done");pk.remove();pk=null;okn++;f.className="fb ok";f.textContent=okn===LB.length?"عنونت الصورة كاملة! ✓":"صحيح ✓"}else{p.classList.add("no");setTimeout(function(){p.classList.remove("no")},600);f.className="fb no";f.textContent="مو هذا مكانها، جرّب مكان ثاني"}})});return d7}
  return div(head(a,i))}
 function quiz(q,i){var n=L.quiz.length,d=div('<span class="kick">التقويم · سؤال '+AN(i+1)+' من '+AN(n)+'</span><h2>'+esc(q.question)+'</h2><div class="opts">'+mixO(q.options,'q'+i)+'</div><div class="fb"></div>');
  function mark(k){var ok=k===q.answer_index;$$(".opt",d).forEach(function(b){var bk=+b.dataset.k;b.disabled=true;if(bk===q.answer_index)b.classList.add("ok");else if(bk===k)b.classList.add("no")});var f=$(".fb",d);f.className="fb "+(ok?"ok":"no");f.innerHTML=(ok?"إجابة صحيحة ✓":"الإجابة الصحيحة مظلّلة بالأخضر")+(q.explanation?'<div style="font-weight:400;color:var(--muted)">'+esc(q.explanation)+'</div>':'')}

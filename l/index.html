@@ -357,14 +357,14 @@ function build(){
  S.push(cover);TY.push(["cover",0]);
  if(L.warmup&&L.warmup.prompt){S.push(warm);TY.push(["warm",0])}
  if(L.vocabulary&&L.vocabulary.length){S.push(vocab);TY.push(["vocab",0])}
- (L.slides||[]).forEach(function(s,i){S.push(function(){return slide(s,i)});TY.push(["slide",i])});
+ (L.slides||[]).forEach(function(s,i){S.push(function(){return slide(s,i)});TY.push(["slide",i]);(L.exit_tickets||[]).forEach(function(t,k){if((t.after|0)===i){S.push(function(){return exitT(t,k)});TY.push(["exitk",k])}})});
  (L.activities||[]).forEach(function(a,i){S.push(function(){return act(a,i)});TY.push(["act",i])});
  (L.quiz||[]).forEach(function(q,i){S.push(function(){return quiz(q,i)});TY.push(["quiz",i])});
  if(L.quiz&&L.quiz.length){S.push(result);TY.push(["result",0])}
- if(L.exit_ticket){S.push(exitT);TY.push(["exit",0])}
+ if(L.exit_ticket){S.push(function(){return exitT()});TY.push(["exit",0])}
 }
 var SECS=[];
-function pageTitle(k){var t=TY[k]||["x",0];if(t[0]==="cover")return "الغلاف";if(t[0]==="warm")return "تهيئة";if(t[0]==="vocab")return "مفردات الدرس";if(t[0]==="slide")return L.slides[t[1]].title;if(t[0]==="act")return (L.activities[t[1]].title||"نشاط");if(t[0]==="quiz")return "سؤال "+AN(t[1]+1);if(t[0]==="result")return "نتيجتك";if(t[0]==="exit")return "بطاقة الخروج";return ""}
+function pageTitle(k){var t=TY[k]||["x",0];if(t[0]==="cover")return "الغلاف";if(t[0]==="warm")return "تهيئة";if(t[0]==="vocab")return "مفردات الدرس";if(t[0]==="slide")return L.slides[t[1]].title;if(t[0]==="act")return (L.activities[t[1]].title||"نشاط");if(t[0]==="quiz")return "سؤال "+AN(t[1]+1);if(t[0]==="result")return "نتيجتك";if(t[0]==="exit")return "بطاقة الخروج";if(t[0]==="exitk")return "✍️ بطاقة الخروج: "+(L.exit_tickets[t[1]].title||"");return ""}
 function buildSecs(){var at=function(ty,ix){for(var k=0;k<TY.length;k++)if(TY[k][0]===ty&&(ix==null||TY[k][1]===ix))return k;return -1};
  SECS=[{t:"البداية",i:0}];var ss=L.sections&&L.sections.length?L.sections:[{title:"الشرح",from:0}];
  ss.forEach(function(x){var k=at("slide",x.from|0);if(k>=0)SECS.push({t:x.title,i:k})});
@@ -387,6 +387,7 @@ function deco(t,ix){var a=(L.activities||[]).length,q=(L.quiz||[]).length,h;
  else if(t==="act")h='<div class="em">🎯</div><h3>نشاط '+AN(ix+1)+' من '+AN(a)+'</h3><p>أجب صح واجمع النجوم!</p>'+stars(a,Object.keys(ACTD).length);
  else if(t==="quiz"){var c=0;for(var k in QZ)if(L.quiz[k]&&QZ[k]===L.quiz[k].answer_index)c++;h='<div class="em">🏆</div><h3>سؤال '+AN(ix+1)+' من '+AN(q)+'</h3><p>كل إجابة صحيحة نجمة</p>'+stars(q,c)}
  else if(t==="result")h='<div class="em">🎉</div><h3>خلّصت الاختبار!</h3><p>شوف نتيجتك في الصفحة المقابلة</p>';
+ else if(t==="exitk")h='<div class="em">✍️</div><h3>قبل ما ننتقل للموضوع التالي</h3><p>لخّص ما تعلمته في «'+esc((L.exit_tickets[ix]||{}).title||"")+'» بكلماتك</p>';
  else h='<div class="em">✍️</div><h3>آخر خطوة</h3><p>اكتب إجابتك بكلماتك</p>';
  return div('<div class="deco">'+h+'</div>').firstChild}
 function balance(){if(window.innerWidth<900)return;var R=$("#scr .pr"),Lp=$("#scr .pl");if(!R||!Lp||Lp.classList.contains("only-deco"))return;var pg=$(".pgno",Lp);
@@ -501,8 +502,8 @@ function quiz(q,i){var n=L.quiz.length,d=div('<span class="kick">التقويم 
 function result(){var n=L.quiz.length,ans=Object.keys(QZ).length,ok=L.quiz.filter(function(q,i){return QZ[i]===q.answer_index}).length;
  var d=div('<div class="center"><span class="kick">نتيجتك</span><div class="score">'+AN(ok)+' / '+AN(n)+'</div><h2>'+(ans<n?"باقي أسئلة ما جاوبتها":ok===n?"ممتاز! 🌟":ok>=n*.6?"أحسنت 👏":"راجع الدرس وحاول مرة ثانية 💪")+'</h2><button class="ibtn" id="again" style="margin-top:12px">أعد الاختبار</button></div>');
  $("#again",d).addEventListener("click",function(){QZ={};var first=S.length-1-(L.exit_ticket?1:0)-n;show(first)});return d}
-function exitT(){var k="mj_dars_exit_"+(ID||FX||"demo"),v="";try{v=localStorage.getItem(k)||""}catch(e){}
- var d=div('<span class="kick">بطاقة الخروج</span><h2>'+esc(L.exit_ticket)+'</h2><textarea placeholder="اكتب إجابتك هنا…">'+esc(v)+'</textarea>'+(L.summary?'<div class="ex"><b>خلاصة الدرس: </b>'+esc(L.summary)+'</div>':'')+'<p class="brand">صُنع بـ <a href="https://dars.majoodah.com" target="_blank" rel="noopener">الدرس التفاعلي · مجودة</a></p>');
+function exitT(t,n){var last=!t,k="mj_dars_exit_"+(ID||FX||"demo")+(last?"":"_"+n),v="";try{v=localStorage.getItem(k)||""}catch(e){}
+ var d=div('<span class="kick">بطاقة الخروج'+(last?'':' · '+esc(t.title))+'</span><h2>'+esc(last?L.exit_ticket:t.prompt)+'</h2><textarea placeholder="اكتب إجابتك هنا…">'+esc(v)+'</textarea>'+(last&&L.summary?'<div class="ex"><b>خلاصة الدرس: </b>'+esc(L.summary)+'</div>':'')+(last?'<p class="brand">صُنع بـ <a href="https://dars.majoodah.com" target="_blank" rel="noopener">الدرس التفاعلي · مجودة</a></p>':''));
  $("textarea",d).addEventListener("input",function(){try{localStorage.setItem(k,this.value)}catch(e){}});return d}
 })();
 </script>

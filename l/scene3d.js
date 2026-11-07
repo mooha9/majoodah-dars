@@ -766,15 +766,15 @@ function realExcretion(o={}){bodySky();const A=anatomy(Object.assign({systems:["
   const sm=A.mesh("skin");sm.updateMatrixWorld(true);const sp=sm.geometry.attributes.position,sn=sm.geometry.attributes.normal,pv=new THREE.Vector3(),SKV=[];
   for(let i=0;i<sp.count;i+=3){pv.fromBufferAttribute(sp,i).applyMatrix4(sm.matrixWorld);if(pv.y>9.6&&pv.y<14.6)SKV.push([pv.clone(),V(sn.getX(i),sn.getY(i),sn.getZ(i)).transformDirection(sm.matrixWorld)])}
   FX.skinV=SKV;show("all")});
- const sweat=particles({kind:"dust",rate:0,color:["#2fa8ff","#bfe6ff"],size:[.16,.1],life:[1.4,2],speed:[.05,.15],gravity:-.9,spread:.2,max:400});sweat.obj.renderOrder=21;
+ const sweat=particles({kind:"dust",rate:0,color:["#0a84ff","#5cc0ff"],size:[.3,.18],life:[1.6,2.2],speed:[.05,.15],gravity:-.9,spread:.2,max:700});sweat.obj.renderOrder=21;
  const S={m:"all"};
- const DX=["jejunum","ileum","duodenum","stomach","pancreas","esophagus","gallbladder","diaphragm"],HID={all:DX,kidney:DX.concat(["liver","colon","rectum"]),skin:DX,lungs:DX,liver:DX.concat(["colon","rectum"]),colon:DX.concat(["liver"])};
+ const DX=["jejunum","ileum","duodenum","stomach","pancreas","esophagus","gallbladder","diaphragm"],HID={all:DX,kidney:DX.concat(["liver","colon","rectum"]),skin:Object.keys(ORG).filter(n=>n!=="skin"),lungs:DX,liver:DX.concat(["colon","rectum"]),colon:DX.concat(["liver"])};
  const show=k=>A.ready.then(()=>{S.m=k;pool.forEach(f=>f.mesh.visible=false);Object.keys(ORG).forEach(n=>{const m=A.mesh(n);if(m&&n!=="skin")m.visible=!(HID[k]||[]).includes(n)});["svc","ivc","partery","pvein","aorta","heart"].forEach(n=>{const m=A.mesh(n);if(m)m.visible=false});Object.keys(ORG).forEach(n=>A.glow(n,false));const sm=A.mesh("skin");sm.material.uniforms.k.value=k==="skin"?.55:.2;
   Object.entries(LB).forEach(([n,l])=>{l.visible=k==="all"||{skin:"skin",kidney:"kidneyL",lungs:"rul",liver:"liver",colon:"colon"}[k]===n});
   const G={kidney:["kidneyR","kidneyL","ureter","bladder"],lungs:["rul","rml","rll","lul","lll","trachea","bronchi"],liver:["liver"],colon:["colon","rectum"]}[k]||[];G.forEach(n=>A.glow(n,true));
   (k==="all"?[]:FX[k]||[]).forEach(f=>f.mesh.visible=true);
   const F={all:[0,11.1,1,9.4],skin:[0,12,1,8.4],kidney:[0,9.9,.2,6.6],lungs:[0,12.9,1,6.6],liver:[-.5,11.2,1,5.4],colon:[0,9.9,1.2,5.8]}[k];if(F)focus(F[0],F[1],F[2],F[3])});
- onFrame(()=>{if(S.m==="skin"&&FX.skinV&&FX.skinV.length)for(let q=0;q<3;q++){const s=FX.skinV[(Math.random()*FX.skinV.length)|0];sweat.pos.copy(s[0]).addScaledVector(s[1],.03);sweat.dir.copy(s[1]);sweat.emit(1)}});
+ onFrame(()=>{if(S.m==="skin"&&FX.skinV&&FX.skinV.length)for(let q=0;q<5;q++){const s=FX.skinV[(Math.random()*FX.skinV.length)|0];sweat.pos.copy(s[0]).addScaledVector(s[1],.03);sweat.dir.copy(s[1]);sweat.emit(1)}});
  return {ready:A.ready,anatomy:A,show}}
 
 // @@bloodCycle

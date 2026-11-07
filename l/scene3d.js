@@ -777,7 +777,185 @@ function realExcretion(o={}){bodySky();const A=anatomy(Object.assign({systems:["
  onFrame(()=>{if(S.m==="skin"&&FX.skinV&&FX.skinV.length)for(let q=0;q<3;q++){const s=FX.skinV[(Math.random()*FX.skinV.length)|0];sweat.pos.copy(s[0]).addScaledVector(s[1],.03);sweat.dir.copy(s[1]);sweat.emit(1)}});
  return {ready:A.ready,anatomy:A,show}}
 
-const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,anatomy,realLungs,realDigestive,realBody,realExcretion,sponge,oneOpening,fatArrow,glb,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
+// @@bloodCycle
+
+// ---------- الدورة الدموية مثل رسمة الكتاب (منظر أمامي): وريد أزرق، شريان أحمر، شعيرات الرئتين، القلب بأربع حجرات ----------
+// kit.bloodCycle({}) → {step(n), follow(), setRate(bpm), points}
+function bloodCycle(o={}){const g=new THREE.Group();put(g,o.parent);sky("#f3f8ff","#ffffff");hemi.intensity=1.7;sunL.intensity=1.6;C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.45;C.maxAzimuthAngle=.45;C.minPolarAngle=1.2;C.maxPolarAngle=1.9;
+ const BL=col("#2f62e6"),RD=col("#e0242f"),tc=new THREE.Color();const grad=t=>tc.copy(BL).lerp(RD,clamp(t,0,1)).clone();
+ const CV={};const mk=(k,pts,r,colorFn)=>{const c=new THREE.CatmullRomCurve3(pts.map(p=>V(p)),false,"centripetal");const m=vtube(c,{r,colorFn,parent:g,seg:Math.max(60,pts.length*24),radial:14,rough:.35});m.material.emissive=col("#ffffff");m.material.emissiveIntensity=0;CV[k]={c,m,r};return c};
+ const blue=()=>BL,red=()=>RD,NB=col("#5b8bff"),NR=col("#ff4757");
+ // القلب: الجانب الأيمن (يسار الشاشة) أزرق، والأيسر أحمر
+ const H=new THREE.Group();H.position.set(0,0,0);g.add(H);
+ const ch=(p,s,c)=>blob({r:.5,scale:s,color:c,parent:H,pos:p,amp:.05,seed:p[0]*7+p[1]*3});
+ const RA=ch([-.5,.38,0],[.85,.8,.75],"#3f6fe8"),RV=ch([-.32,-.38,.05],[.9,1.05,.8],"#2f5bd6"),LA=ch([.5,.4,-.05],[.8,.75,.7],"#e8414a"),LV=ch([.3,-.42,0],[.95,1.15,.85],"#d6202c");
+ const sep=new THREE.Mesh(new THREE.BoxGeometry(.06,1.5,.7),mat("#f4d6c8"));sep.position.set(0,-.05,.05);H.add(sep);
+ // الأوعية
+ const z1=.12,z2=-.12;
+ mk("ivc",[[-1.9,-2.4,z2],[-1.6,-1.3,z2],[-1.0,-.2,z2],[-.62,.3,0]],.17,blue);                 // وريد أجوف سفلي (١)
+ mk("svc",[[-.75,4.2,z2],[-.75,2.6,z2],[-.72,1.3,z2],[-.6,.62,0]],.17,blue);                   // وريد أجوف علوي (وريد)
+ mk("trunk",[[-.25,-.1,.2],[-.15,.9,.25],[0,1.75,.2],[.1,2.15,.1]],.16,blue);                   // الشريان الرئوي (٢)
+ mk("pl",[[.1,2.15,.1],[-.9,2.3,.05],[-2.0,2.3,0],[-2.75,2.0,0]],.13,blue);
+ mk("pr",[[.1,2.15,.1],[1.0,2.3,.05],[2.0,2.3,0],[2.75,2.0,0]],.13,blue);
+ mk("aorta",[[.25,-.1,.3],[.45,1.0,.35],[.55,2.4,.3],[.6,3.2,.25],[.6,4.2,.25]],.18,red);        // الشريان الأبهر (شريان)
+ mk("vl",[[-2.75,.6,0],[-2.0,.55,-.05],[-1.0,.95,-.1],[.25,.65,-.15]],.12,red);                 // الأوردة الرئوية (٤)
+ mk("vr",[[2.75,.6,0],[2.0,.55,-.05],[1.2,.75,-.1],[.5,.62,-.15]],.12,red);
+ // شعيرات الرئتين: من الأزرق (الداخل) إلى الأحمر (الخارج)
+ const NETS={l:[],r:[]};[-1,1].forEach(s=>{const cx=s*3.75,k=s<0?"l":"r";const lobe=blob({r:1,scale:[1.15,1.5,.3],color:"#ffe3e7",opacity:.5,parent:g,pos:[cx,1.3,-.3],seed:s+3});
+  const top=[[s*2.75,2.0,0],[cx-s*.6,2.45,.02],[cx,2.62,.02],[cx+s*.6,2.4,.02]],bot=[[s*2.75,.6,0],[cx-s*.6,.15,.02],[cx,-.02,.02],[cx+s*.6,.2,.02]];
+  for(let i=0;i<10;i++){const u=i/9,x=cx+s*(-.95+u*1.9)*.92,yt=2.55-Math.pow(u-.5,2)*1.2,yb=.1+Math.pow(u-.5,2)*1.1,pts=[[s*2.75,2.0,0],[x,yt,.03]];for(let k=1;k<6;k++){const y=yt+(yb-yt)*k/6;pts.push([x+Math.sin(k*1.7+i)*.12,y,.03+(k%2)*.04])}pts.push([x,yb,.03],[s*2.75,.6,0]);
+   const c=new THREE.CatmullRomCurve3(pts.map(p=>V(p)),false,"centripetal");const nm=vtube(c,{r:.042,colorFn:t=>tc.copy(NB).lerp(NR,clamp((t-.12)/.76,0,1)).clone(),parent:g,seg:120,radial:8});nm.material.emissive=col("#ffffff");nm.material.emissiveIntensity=.18;NETS[k].push(c)}
+  for(let j=1;j<5;j++){const y=2.3-j*.42,pts=[];for(let i=0;i<=10;i++){const u=i/10;pts.push([cx+s*(-.9+u*1.8)*.9,y+Math.sin(u*9+j)*.06,.06])}vtube(pts,{r:.025,color:"#"+grad((2.4-y)/2.2).getHexString(),parent:g,seg:60,radial:6})}
+  });
+ // شعيرات الجسم (أعلى): من الأحمر إلى الأزرق
+ const BODY=[];for(let i=0;i<7;i++){const x=.6-i*.22;const pts=[[.6,4.2,.25],[.45-i*.05,4.6+i*.05,.2],[x-.2,5.15+Math.sin(i)*.15,.15],[-.6-i*.03,4.6+i*.04,0],[-.75,4.2,z2]];const c=new THREE.CatmullRomCurve3(pts.map(p=>V(p)),false,"centripetal");vtube(c,{r:.04,colorFn:t=>grad(1-(t-.3)/.4),parent:g,seg:70,radial:8});BODY.push(c)}
+ const bodyBox=blob({r:1,scale:[1.25,.55,.3],color:"#ffe9c9",opacity:.45,parent:g,pos:[-.05,4.95,-.1],seed:9});
+ // خلايا الدم تتحرك
+ const cellC=new THREE.Color();const flow=(c,n,fn,sp)=>movers(c,{n,size:.075,shape:"cell",speed:sp||.12,parent:g,colorFn:fn||((u)=>cellC.copy(BL))});
+ const F=[flow(CV.ivc.c,9),flow(CV.svc.c,9),flow(CV.trunk.c,6),flow(CV.pl.c,8),flow(CV.pr.c,8),flow(CV.aorta.c,10,()=>cellC.copy(RD)),flow(CV.vl.c,8,()=>cellC.copy(RD)),flow(CV.vr.c,8,()=>cellC.copy(RD))];
+ NETS.l.concat(NETS.r).forEach((c,i)=>{if(i%2===0)F.push(flow(c,6,u=>cellC.copy(grad((u-.3)/.4)),.1))});BODY.forEach((c,i)=>{if(i%2===0)F.push(flow(c,5,u=>cellC.copy(grad(1-(u-.3)/.4)),.1))});
+ // الأسهم الخضراء والأرقام كما في الكتاب
+ const AR=[];const arrowsOn=(curves)=>{AR.forEach(a=>{a.m.visible=false});let j=0;curves.forEach(c=>{for(let k=0;k<5;k++){let a=AR[j];if(!a){a={m:new THREE.Mesh(new THREE.ConeGeometry(.13,.3,14),new THREE.MeshStandardMaterial({color:col("#3fc23a"),emissive:col("#2fa02a"),emissiveIntensity:.6,depthTest:false,transparent:true}))};a.m.renderOrder=30;g.add(a.m);AR.push(a)}a.c=c;a.o=k/5;a.m.visible=true;j++}});};
+ const up=V(0,1,0),T=new THREE.Vector3();let arT=0;
+ onFrame((t,dt)=>{arT+=dt*.18;AR.forEach(a=>{if(!a.m.visible)return;const u=(a.o+arT)%1;a.c.getPointAt(u,a.m.position);a.m.position.z+=.25;a.c.getTangentAt(u,T);a.m.quaternion.setFromUnitVectors(up,T)})});
+ const badge=(n,p,cl)=>{const l=addLabel(n,p[0],p[1],p[2]);l.element.style.cssText+=";background:#ffd400;color:#2b2a26;border:3px solid #3fc23a;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;font-size:17px;border-radius:50%";return l};
+ const B=[badge("١",[-1.5,-1.0,.4]),badge("٢",[-.15,1.55,.6]),badge("٣",[-3.75,1.3,.5]),badge("٣",[3.75,1.3,.5]),badge("٤",[1.45,.7,.4])];
+ const LBL=(t,p,c)=>{const l=addLabel(t,p[0],p[1],p[2]);if(c)l.element.style.background=c;return l};
+ LBL("وريد",[-1.25,3.55,0],"#2f62e6");LBL("شريان",[1.15,3.55,0],"#e0242f");LBL("شعيرات دموية",[3.75,-.55,0],"#7b4dff");LBL("الرئة",[-3.75,3.05,0],"#ff7a9a");LBL("الرئة",[3.75,3.05,0],"#ff7a9a");LBL("القلب",[1.35,-.75,.5],"#c8343f");LBL("خلايا الجسم",[-.05,5.75,0],"#e8a200");
+ const STEPS=[null,
+  {keys:["ivc","svc"],txt:"١ يتدفق الدم غير المؤكسج (غير المحمل بالأكسجين) إلى القلب.",f:[-.6,1.4,0,8]},
+  {keys:["trunk","pl","pr"],txt:"٢ يُضخ الدم غير المؤكسج إلى الرئتين.",f:[0,1.6,0,8.4]},
+  {keys:["nl","nr"],txt:"٣ يتخلص الدم في الرئتين من ثاني أكسيد الكربون ويُحمل بالأكسجين.",f:[0,1.4,0,10.2]},
+  {keys:["vl","vr","aorta"],txt:"٤ يتدفق الدم المؤكسج (المحمل بالأكسجين) إلى القلب، ثم يُضخ إلى سائر أجزاء الجسم.",f:[0,2.0,0,9.6]}];
+ const curvesOf=k=>k==="nl"?NETS.l:k==="nr"?NETS.r:[CV[k].c];
+ const dim=(m,on)=>{m.material.transparent=true;m.material.opacity=on?1:.35;m.material.depthWrite=on;m.material.needsUpdate=true};
+ const step=n=>{Object.values(CV).forEach(v=>dim(v.m,!n));B.forEach((b,i)=>b.element.style.transform=(i===n-1||(n===3&&i===3))?"scale(1.35)":"");
+  if(!n){arrowsOn([]);return}const S=STEPS[n];S.keys.forEach(k=>{if(CV[k])dim(CV[k].m,true)});arrowsOn([].concat(...S.keys.map(curvesOf)).filter((c,i,a)=>a.length<10||i%2===0));ui.result(S.txt);focus(S.f[0],S.f[1],S.f[2],S.f[3]);snd("pop")};
+ // نبض القلب
+ const HR={bpm:72,ph:0};onFrame((t,dt)=>{HR.ph+=dt*HR.bpm/60;const f=HR.ph%1,b=1+.07*Math.exp(-Math.pow((f-.12)/.06,2))+.04*Math.exp(-Math.pow((f-.32)/.07,2));H.scale.setScalar(b);F.forEach(m=>m.rate=HR.bpm/72)});
+ // تتبّع خلية دم واحدة في الدورة كاملة
+ const path=[[CV.svc.c,0],[CV.trunk.c,0],[CV.pl.c,0],[NETS.l[4],0],[CV.vl.c,0],[CV.aorta.c,0],[BODY[3],0]];const segStep=[1,2,2,3,4,4,0];
+ const big=new THREE.Mesh(new THREE.SphereGeometry(.17,20,14).scale(1,.5,1),new THREE.MeshStandardMaterial({color:col("#2f62e6"),emissive:col("#ffffff"),emissiveIntensity:.25,depthTest:false,transparent:true}));big.renderOrder=31;big.visible=false;g.add(big);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.24,.3,32),new THREE.MeshBasicMaterial({color:col("#ffd400"),depthTest:false,transparent:true,side:THREE.DoubleSide}));ring.renderOrder=31;big.add(ring);
+ const FO={on:false,i:0,u:0};
+ onFrame((t,dt)=>{if(!FO.on)return;const [c]=path[FO.i];FO.u+=dt*(FO.i===3||FO.i===6?.35:.45)*HR.bpm/72;if(FO.u>=1){FO.u=0;FO.i++;if(FO.i>=path.length){FO.on=false;big.visible=false;ui.result("أكملت الخلية دورة كاملة! 🎉 القلب ← الرئتان ← القلب ← الجسم ← القلب");step(0);return}const s=segStep[FO.i];if(s)step(s);else ui.result("في خلايا الجسم: يعطي الدم الأكسجين والغذاء، ويأخذ ثاني أكسيد الكربون والفضلات، فيصير غير مؤكسج")}
+  path[FO.i][0].getPointAt(FO.u,big.position);big.position.z+=.3;ring.quaternion.copy(camera.quaternion);
+  const ox=FO.i===3?FO.u:FO.i===6?1-FO.u:(FO.i>3&&FO.i<6?1:0);big.material.color.copy(grad(FO.i===3?(FO.u-.3)/.4:FO.i===6?1-(FO.u-.3)/.4:ox))});
+ view(0,1.9,11.2,0,1.75,0);sway();
+ return {group:g,step,setRate:n=>{HR.bpm=+n||72},follow:()=>{FO.on=true;FO.i=0;FO.u=0;big.visible=true;step(1);snd("whoosh")},points:{heart:[0,0,0]}}}
+
+// @@end bloodCycle
+
+// @@openClosed2
+
+// ---------- دوران مفتوح (الجرادة) ودوران مغلق (السمكة): كل حيوان في إطار كامل بخطوات مرقّمة ----------
+// kit.openClosed2({}) → {show('open'|'closed')}
+function openClosed2(o={}){const g=new THREE.Group();put(g,o.parent);sky("#eef6ff","#ffffff");hemi.intensity=1.7;sunL.intensity=1.7;C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.5;C.maxAzimuthAngle=.5;C.minPolarAngle=1.15;C.maxPolarAngle=1.95;
+ const RED=col("#e0242f"),BLU=col("#2f62e6"),tc=new THREE.Color();
+ const LB={open:[],closed:[]};const lab=(k,t,p,c)=>{const l=addLabel(t,p[0]+(k==="closed"?14:0),p[1],p[2]);if(c)l.element.style.background=c;LB[k].push(l);return l};
+ const badge=(k,n,p)=>{const l=lab(k,n,p);l.element.style.cssText+=";background:#ffd400;color:#2b2a26;border:3px solid #3fc23a;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;font-size:17px;border-radius:50%";return l};
+ const shell=(p,s,c,op,parent)=>{const m=blob({r:1,scale:s,color:c,opacity:op,parent,pos:p,amp:.03,seed:p[0]*3+1});m.renderOrder=5;return m};
+ // ================= الجرادة: دوران مفتوح =================
+ const A=new THREE.Group();g.add(A);
+ shell([-2.55,.15,0],[.62,.7,.55],"#8cc63f",.55,A);shell([-1.35,.05,-.3],[.85,.72,.3],"#a6d65a",.5,A);shell([1.05,-.1,-.3],[2.15,.68,.3],"#a6d65a",.45,A);
+ const eye=new THREE.Mesh(new THREE.SphereGeometry(.13,16,12),mat("#2a1a0a"));eye.position.set(-2.75,.35,.45);A.add(eye);
+ vtube([[-2.9,.6,.2],[-3.4,1.6,.3],[-3.9,2.3,.3]],{r:.03,color:"#6a9a2a",parent:A});vtube([[-2.85,.6,-.1],[-3.2,1.7,-.2],[-3.5,2.4,-.2]],{r:.03,color:"#6a9a2a",parent:A});
+ [[-1.6,-1],[-1.1,-1],[-.4,-1]].forEach(([x],i)=>vtube([[x,-.55,.35],[x-.25+i*.1,-1.25,.5],[x-.5+i*.2,-1.9,.55]],{r:.05,color:"#7aa83a",parent:A}));
+ vtube([[-.3,-.45,-.45],[.9,.35,-.6],[1.9,-.9,-.6],[2.2,-1.9,-.6]],{r:.06,color:"#7aa83a",parent:A});
+ // الجيوب: الدم يملأ تجويف الجسم ويغمر الأعضاء
+ const sinus=[shell([-1.35,-.05,-.2],[.72,.55,.12],"#ffb3b9",.55,A),shell([1.05,-.2,-.2],[2.0,.5,.12],"#ffb3b9",.55,A)];
+ vtube([[-2.6,0,0],[-1.4,-.15,0],[0,-.25,0],[1.5,-.3,0],[3.05,-.25,0]],{r:.17,color:"#c98b3a",parent:A});   // القناة الهضمية
+ shell([.3,-.45,.15],[.45,.25,.25],"#e0c060",.9,A);shell([1.7,-.5,-.1],[.5,.22,.25],"#e0c060",.9,A);
+ // القلب الأنبوبي على الظهر + فتحاته (ostia)
+ const heartC=new THREE.CatmullRomCurve3([[3.0,.42,0],[2.0,.5,0],[1.0,.52,0],[0,.48,0],[-1.2,.5,0],[-2.25,.42,0]].map(p=>V(p)));
+ const heartM=vtube(heartC,{r:t=>t<.55?.12:.085,color:"#d42a35",parent:A,seg:160});const ostia=[];[2.4,1.7,1.0,.3].forEach(x=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.07,.025,8,16),mat("#5a0a10"));r.position.set(x,.52,.11);A.add(r);ostia.push(x)});
+ // الدم: داخل القلب ← يخرج من الطرف المفتوح ← يغمر الأعضاء ← يعود من الفتحات
+ const AP=[];for(let k=0;k<26;k++){const ox=ostia[k%4],y=-.05-Math.random()*.55,z=(Math.random()-.5)*.7;
+  AP.push(new THREE.CatmullRomCurve3([V(ox,.5,0),V(Math.min(ox,1.0),.52,0),V(-1.2,.5,0),V(-2.25,.42,0),V(-2.6,.15,z*.5),V(-2.2,y+.05,z),V(-1.2,y,z),V(0,y-.05,z),V((ox+.4),y+.05,z),V(ox+.15,.3,z*.3),V(ox,.5,0)],false,"centripetal"))}
+ const pc=new THREE.Color();const AF=AP.map((c,i)=>movers(c,{n:3,size:.075,speed:.07+Math.random()*.03,parent:A,colorFn:()=>pc.copy(RED),even:false}));
+ const aSteps=[{n:"١",p:[-1.1,.98,.3],t:"١ القلب أنبوب على الظهر يضخ الدم إلى الأمام"},{n:"٢",p:[-2.4,-.75,.6],t:"٢ يخرج الدم من نهاية الأنبوب مباشرة إلى الأنسجة"},{n:"٣",p:[1.0,-1.05,.6],t:"٣ يتجمع الدم في الجيوب ويغمر الأعضاء مباشرة"},{n:"٤",p:[1.9,.98,.3],t:"٤ يعود الدم إلى القلب من فتحات صغيرة"}];
+ aSteps.forEach(s=>badge("open",s.n,s.p));
+ lab("open","دوران مفتوح — الجرادة",[0,2.35,0],"#5a9a1a");lab("open","القلب الأنبوبي",[.4,1.45,.3],"#d42a35");lab("open","الجيوب: الدم خارج الأوعية",[-.6,-1.5,.6],"#ff6b81");lab("open","فتحات يعود منها الدم",[3.4,.95,.3],"#7b4dff");
+ // ================= السمكة: دوران مغلق (x=14) =================
+ const B=new THREE.Group();B.position.x=14;g.add(B);
+ const fb=shell([0,0,-.3],[2.6,1.15,.22],"#ffc58f",.6,B);
+ const tail=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(2.4,0),new THREE.Vector2(3.6,1.1),new THREE.Vector2(3.35,0),new THREE.Vector2(3.6,-1.1)])),new THREE.MeshStandardMaterial({color:col("#ff9a3c"),transparent:true,opacity:.45,side:THREE.DoubleSide}));B.add(tail);
+ const fin=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-.6,1.0),new THREE.Vector2(.4,1.7),new THREE.Vector2(1.1,1.0)])),tail.material);B.add(fin);
+ const feye=new THREE.Mesh(new THREE.SphereGeometry(.15,16,12),mat("#111"));feye.position.set(-2.05,.35,.45);B.add(feye);
+ const heartB=blob({r:.28,scale:[1.2,.9,.8],color:"#c8343f",parent:B,pos:[-1.25,-.62,0]});
+ // الخياشيم
+ const GL=[];for(let i=0;i<4;i++){const x=-1.75+i*.17;GL.push(vtube([[x,-.7,.15],[x-.18,-.1,.2],[x-.12,.45,.2],[x+.02,.75,.15]],{r:.06,colorFn:t=>tc.copy(BLU).lerp(RED,t).clone(),parent:B,radial:10}));for(let k=0;k<6;k++){const y=-.55+k*.22;vtube([[x-.1,y,.22],[x-.32,y+.04,.24]],{r:.025,color:"#ff5a6a",parent:B,radial:6})}}
+ const vc=(pts,colorFn,r)=>{const c=new THREE.CatmullRomCurve3(pts.map(p=>V(p)),false,"centripetal");vtube(c,{r:r||.08,colorFn,parent:B,radial:12,seg:120});return c};
+ const fc=new THREE.Color();
+ const c1=vc([[-1.05,-.62,.05],[-1.35,-.82,.1],[-1.65,-.8,.15],[-1.75,-.7,.15]],()=>BLU);                   // القلب ← الخياشيم
+ const c2=vc([[-1.3,.78,.15],[-.6,.85,.1],[.6,.82,.1],[1.7,.6,.1],[2.1,.3,.1]],()=>RED);                    // الخياشيم ← الجسم (شريان)
+ const nets=[];for(let i=0;i<6;i++){const y=.3-i*.13;nets.push(vc([[2.1,.3,.1],[2.25+(i%2)*.1,y+.1,.12],[2.5,y,.14],[2.3,y-.12,.12],[2.1,-.45,.1]],()=>fc.copy(RED).lerp(BLU,.5),.035))}
+ const c3=vc([[2.1,-.45,.1],[1.2,-.72,.08],[0,-.8,.05],[-.85,-.65,.05],[-1.05,-.62,.05]],()=>BLU);          // الجسم ← القلب (وريد)
+ const gillC=new THREE.CatmullRomCurve3([V(-1.75,-.7,.15),V(-1.9,-.1,.2),V(-1.6,.6,.2),V(-1.3,.78,.15)]);
+ const flowB=(c,n,fn,sp)=>movers(c,{n,size:.075,shape:"cell",speed:sp||.12,parent:B,colorFn:fn});
+ flowB(c1,5,()=>fc.copy(BLU));flowB(gillC,5,u=>fc.copy(BLU).lerp(RED,u),.1);flowB(c2,12,()=>fc.copy(RED),.08);nets.forEach((c,i)=>{if(i%2===0)flowB(c,3,u=>fc.copy(RED).lerp(BLU,u),.12)});flowB(c3,12,()=>fc.copy(BLU),.08);
+ [[-1.3,-1.25,.4,"١"],[-2.35,.2,.5,"٢"],[2.3,.85,.4,"٣"],[.2,-1.25,.4,"٤"]].forEach(b=>badge("closed",b[3],[b[0],b[1],b[2]]));
+ lab("closed","دوران مغلق — السمكة",[0,2.2,0],"#2f62e6");lab("closed","القلب",[-.95,-1.55,.4],"#c8343f");lab("closed","الخياشيم: يأخذ الدم الأكسجين",[-2.6,1.3,.3],"#ff5a6a");lab("closed","خلايا الجسم",[2.6,-1.1,.3],"#e8a200");lab("closed","الدم داخل الأوعية دائماً",[.4,1.45,.3],"#14a06f");
+ const bSteps=["١ يضخ القلب الدم إلى الخياشيم","٢ في الخياشيم يأخذ الدم الأكسجين","٣ يذهب الدم داخل الأوعية إلى خلايا الجسم","٤ يعود الدم إلى القلب داخل الأوعية"];
+ // نبض
+ onFrame(t=>{const b=1+.08*Math.exp(-Math.pow(((t*1.1)%1-.1)/.07,2));heartB.scale.set(1.2*b,.9*b,.8*b);heartM.scale.set(1,1+.12*Math.exp(-Math.pow(((t*1.1)%1-.1)/.07,2)),1)});
+ const show=w=>{A.visible=w==="open";B.visible=w==="closed";Object.entries(LB).forEach(([k,ls])=>ls.forEach(l=>l.visible=k===w));
+  const T=w==="open"?[.1,.1,0]:[14.1,.05,0];const P=w==="open"?[.5,.8,7.9]:[14.5,.6,7.3];const k0=camera.position.clone(),t0=C.target.clone();let u=0;const f=(tt,dt)=>{if(u>=1)return;u=Math.min(1,u+dt/.8);const e=ease(u);camera.position.lerpVectors(k0,V(P),e);C.target.lerpVectors(t0,V(T),e);camera.lookAt(C.target)};onFrame(f);
+  ui.result(w==="open"?"المفتوح: الدم يخرج من الأنبوب ويغمر الأعضاء مباشرة ثم يعود إلى القلب":"المغلق: الدم يتحرك داخل الأوعية دائماً: القلب ← الخياشيم ← الجسم ← القلب")};
+ let si=-1;const next=()=>{const w=A.visible?"open":"closed";si=(si+1)%4;ui.result(w==="open"?aSteps[si].t:bSteps[si]);LB[w].forEach(l=>{const t=l.element.textContent;if(/^[١٢٣٤]$/.test(t))l.element.style.transform=t===["١","٢","٣","٤"][si]?"scale(1.45)":""});snd("pop")};
+ view(.5,.8,7.9,.1,.1,0);show("open");
+ return {group:g,show,next}}
+
+// @@end openClosed2
+
+// @@paperTest2
+
+// ---------- تجربة امتصاص الورق للماء (أوضح): مخابير مدرّجة بأرقام، أشرطة بنقوش واضحة، بلل يصعد، قراءة قبل/بعد وترتيب ----------
+// kit.paperTest2({}) → {dip(),reset()}
+function paperTest2(o={}){const g=new THREE.Group();put(g,o.parent);sky("#cfe3f5","#f4f8ff");hemi.intensity=1.6;sunL.intensity=2;C.autoRotate=false;SW.user=true;C.minAzimuthAngle=-.5;C.maxAzimuthAngle=.5;
+ const AN=n=>String(n).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);
+ const tb=new THREE.Mesh(new THREE.BoxGeometry(10,.3,3.4),mat("#c99a5c",{roughness:.8}));tb.position.y=-.15;g.add(tb);
+ const H=3.0,R=.52,ML=v=>.1+v/100*H;   // ١٠٠ مل = ارتفاع المخبار
+ const tex=(draw)=>canvasTex(128,512,(c,w,h)=>{draw(c,w,h)});
+ const PAT={
+  fiber:tex((c,w,h)=>{c.fillStyle="#ffffff";c.fillRect(0,0,w,h);c.strokeStyle="#9fc3e6";c.lineWidth=3;for(let i=-h;i<h;i+=26){c.beginPath();c.moveTo(0,i);c.lineTo(w,i+w);c.stroke();c.beginPath();c.moveTo(w,i);c.lineTo(0,i+w);c.stroke()}c.fillStyle="#cfe2f6";for(let y=8;y<h;y+=26)for(let x=6;x<w;x+=26){c.beginPath();c.arc(x+13,y+5,4,0,7);c.fill()}}),
+  towel:tex((c,w,h)=>{c.fillStyle="#fbfaf5";c.fillRect(0,0,w,h);c.fillStyle="#d9d4c4";for(let y=6;y<h;y+=14)for(let x=(y/14%2)*7+4;x<w;x+=14){c.beginPath();c.arc(x,y,2.4,0,7);c.fill()}}),
+  wrap:tex((c,w,h)=>{c.fillStyle="#e2343f";c.fillRect(0,0,w,h);c.fillStyle="#ffd84a";for(let y=20;y<h;y+=46)for(let x=(y/46%2)*30+18;x<w;x+=60){c.save();c.translate(x,y);c.beginPath();for(let k=0;k<10;k++){const r=k%2?6:14,a=k*Math.PI/5-Math.PI/2;c.lineTo(Math.cos(a)*r,Math.sin(a)*r)}c.fill();c.restore()}}),
+  print:tex((c,w,h)=>{c.fillStyle="#ffffff";c.fillRect(0,0,w,h);c.strokeStyle="#b9cbe8";c.lineWidth=2;for(let y=24;y<h;y+=22){c.beginPath();c.moveTo(8,y);c.lineTo(w-8,y);c.stroke()}c.strokeStyle="#f0a0a0";c.beginPath();c.moveTo(w-22,0);c.lineTo(w-22,h);c.stroke()})};
+ const scaleTex=canvasTex(96,512,(c,w,h)=>{c.clearRect(0,0,w,h);c.fillStyle="rgba(255,255,255,.85)";c.fillRect(0,0,w,h);c.strokeStyle="#1d2b44";c.fillStyle="#1d2b44";c.font="bold 30px Tahoma";c.textAlign="right";
+  for(let v=0;v<=100;v+=5){const y=h-(v/100)*(h-24)-12;c.lineWidth=v%10?2:4;c.beginPath();c.moveTo(0,y);c.lineTo(v%10?22:38,y);c.stroke();if(v%20===0)c.fillText(AN(v),w-4,y+10)}});
+ const P=[{n:"مناشف من الألياف",k:"fiber",a:22,rise:1.0},{n:"مناشف عادية",k:"towel",a:14,rise:.7},{n:"ورق طباعة",k:"print",a:6,rise:.35},{n:"ورق تجليد",k:"wrap",a:1,rise:.05}];
+ const items=P.map((p,i)=>{const x=3.45-i*2.3;const it={p,x,lvl:50};
+  const glass=new THREE.Mesh(new THREE.CylinderGeometry(R,R,H+.2,40,1,true),new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.18,roughness:.05,side:THREE.DoubleSide,depthWrite:false}));glass.position.set(x,.1+(H+.2)/2,0);glass.renderOrder=9;g.add(glass);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(R,.03,8,40),mat("#9fb3c8"));rim.rotation.x=Math.PI/2;rim.position.set(x,H+.3,0);g.add(rim);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(R+.25,R+.3,.1,40),mat("#5b6b80"));base.position.set(x,.05,0);g.add(base);
+  const sc=new THREE.Mesh(new THREE.PlaneGeometry(.42,H+.05),new THREE.MeshBasicMaterial({map:scaleTex,transparent:true}));sc.position.set(x-R-.24,.1+H/2,.05);g.add(sc);
+  const w=new THREE.Mesh(new THREE.CylinderGeometry(R-.03,R-.03,1,40),new THREE.MeshPhysicalMaterial({color:col("#1f74e0"),transparent:true,opacity:.88,roughness:.15}));w.geometry.translate(0,.5,0);w.position.set(x,.1,0);g.add(w);it.w=w;
+  const top=new THREE.Mesh(new THREE.CircleGeometry(R-.03,40),new THREE.MeshBasicMaterial({color:col("#8cc8ff"),transparent:true,opacity:.9}));top.rotation.x=-Math.PI/2;g.add(top);it.top=top;
+  const S=new THREE.Group();g.add(S);it.S=S;const sw=.5,sh=2.6;
+  const st=new THREE.Mesh(new THREE.BoxGeometry(sw,sh,.04),[mat("#ddd"),mat("#ddd"),mat("#ddd"),mat("#ddd"),new THREE.MeshStandardMaterial({map:PAT[p.k],roughness:.9}),new THREE.MeshStandardMaterial({map:PAT[p.k],roughness:.9})]);st.position.y=sh/2;S.add(st);
+  const ed=new THREE.LineSegments(new THREE.EdgesGeometry(st.geometry),new THREE.LineBasicMaterial({color:0x33415a}));ed.position.copy(st.position);S.add(ed);
+  const wet=new THREE.Mesh(new THREE.PlaneGeometry(sw,1),new THREE.MeshBasicMaterial({color:col("#1f6fd6"),transparent:true,opacity:.45}));wet.geometry.translate(0,.5,0);wet.position.z=.025;wet.scale.y=.001;S.add(wet);it.wet=wet;
+  const clip=new THREE.Mesh(new THREE.BoxGeometry(.6,.14,.12),mat("#2f3b52"));clip.position.y=sh+.02;S.add(clip);
+  const nm=addLabel(p.n,x,-.55,.9);it.nm=nm;const rd=addLabel("",x,H+.55,.6);rd.element.style.background="#1d2b44";it.rd=rd;const res=addLabel("",x,-1.0,.9);res.visible=false;it.res=res;
+  return it});
+ const S={t:-1};const UP=H+1.25,DOWN=.35;
+ const setLvl=it=>{const y=ML(it.lvl);it.w.scale.y=y-.1;it.top.position.set(it.x,y,0);it.rd.element.textContent=AN(Math.round(it.lvl))+" مل"};
+ const reset=()=>{S.t=-1;items.forEach(it=>{it.lvl=50;setLvl(it);it.S.position.set(it.x,UP,0);it.wet.scale.y=.001;it.res.visible=false});ui.result("الماء في كل مخبار ٥٠ مل. توقّع: أي ورقة تمتص أكثر؟ ثم اضغط «اغمس الأشرطة»")};
+ const dip=()=>{if(S.t>=0&&S.t<9)return;reset();S.t=0;snd("blub");ui.result("نغمس الأشرطة في الماء دقيقة كاملة…")};
+ onFrame((t,dt)=>{if(S.t<0||S.t>50)return;S.t+=dt;const T=S.t;
+  items.forEach(it=>{const down=ease(clamp(T/1.3,0,1)),soak=ease(clamp((T-1.3)/3.6,0,1)),up=ease(clamp((T-5.3)/1.3,0,1));
+   it.S.position.y=UP-(UP-DOWN)*down+(UP-DOWN)*up;it.lvl=50-it.p.a*soak;setLvl(it);
+   const sub=Math.max(0,ML(50)-DOWN);it.wet.scale.y=Math.max(.001,(sub+it.p.rise)*clamp((T-1.0)/3.8,0,1))});
+  if(T>2.2&&T-dt<=2.2)ui.result("راقب: الماء يصعد في الشريط (الجزء الأزرق) ومستوى الماء في المخبار ينزل");
+  if(T>6.8){S.t=99;const rank=items.slice().sort((a,b)=>b.p.a-a.p.a);items.forEach(it=>{const r=rank.indexOf(it)+1;it.res.element.textContent=(r===1?"🏆 ":"")+"امتص "+AN(it.p.a)+" مل";it.res.element.style.background=r===1?"#16a34a":r===2?"#2f8cff":r===3?"#e8a200":"#9aa3ad";it.res.visible=true});
+   snd("ding");ui.result("مناشف الألياف امتصت أكبر كمية (٥٠ ← ٢٨ مل) — مثل الأمعاء الغليظة التي تمتص الماء من الفضلات")}});
+ view(0,2.8,11.2,0,2.5,0);reset();
+ return {dip,reset}}
+
+// @@end paperTest2
+
+const kit={sound:(n,a,b)=>snd(n,a,b),THREE,particles,ground,strata,tree,palm,house,tower,cloud,rain,sun,water,flow,arrow,planet,volcano,earthquake,earthLayers,anatomy,realLungs,realDigestive,realBody,realExcretion,sponge,oneOpening,paperTest2,openClosed2,bloodCycle,fatArrow,glb,bodyShell,digestive,lungs,heart,circulation,alveoli,worm,openClosed,thermo,paperTest,bodySystems,vtube,blob,movers,view,shake,focus,sky,mat,glowMat,canvasTex,strataTex,noise,fbm,label:(t,p)=>addLabel(t,p),shadowy,controls:C,lights:{hemi,sun:sunL}};
 
 function rs(){const w=innerWidth,h=innerHeight;R.setSize(w,h);comp.setSize(w,h);LR.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();PU.value=h*PR/(2*Math.tan(camera.fov*D2R/2))}
 addEventListener("resize",rs);rs();

@@ -1313,8 +1313,8 @@
    {
     "slide_index": 8,
     "title": "تجربة امتصاص الورق للماء",
-    "caption": "توقّع أولاً، ثم اضغط «اغمس الأشرطة» وراقب مستوى الماء في كل مخبار.",
-    "code": "var T=kit.paperTest({});\nui.button('اغمس الأشرطة',T.dip);\nui.button('أعد التجربة',T.reset);"
+    "caption": "توقّع أولاً، ثم اضغط «اغمس الأشرطة»: راقب البلل يصعد في كل شريط ومستوى الماء ينزل، ثم اقرأ كم امتص كل نوع.",
+    "code": "var T=kit.paperTest2({});\nui.button('اغمس الأشرطة 💧',T.dip);\nui.button('أعد التجربة',T.reset);"
    },
    {
     "slide_index": 10,
@@ -1355,20 +1355,26 @@
    {
     "slide_index": 21,
     "title": "دوران مفتوح ودوران مغلق",
-    "caption": "قارن: أين يتحرك الدم في الجراد؟ وأين يتحرك في السمكة؟",
-    "code": "var O=kit.openClosed({});\nvar p=O.points;\naddLabel('القلب الأنبوبي (على الظهر)',p.dorsal[0],p.dorsal[1],p.dorsal[2]);\naddLabel('الدم يخرج ويغمر الأعضاء',p.sinus[0],p.sinus[1],p.sinus[2]);\naddLabel('القلب',p.heartB[0],p.heartB[1],p.heartB[2]);\naddLabel('الخياشيم: يأخذ الدم الأكسجين',p.gills[0],p.gills[1],p.gills[2]);\naddLabel('أوعية إلى الجسم',p.body[0],p.body[1],p.body[2]);\nui.result('المفتوح: الدم يخرج من الأوعية إلى الأنسجة · المغلق: الدم داخل الأوعية دائماً');"
+    "caption": "اختر «مفتوح» أو «مغلق»، ثم اضغط «الخطوة التالية» لتتابع الدم بالأرقام ١ ← ٤.",
+    "code": "var O=kit.openClosed2({});\nui.button('مفتوح: الجرادة 🦗',function(){O.show('open')});\nui.button('مغلق: السمكة 🐟',function(){O.show('closed')});\nui.button('الخطوة التالية ▶',O.next);"
    },
    {
     "slide_index": 23,
     "title": "الدورة الدموية",
-    "caption": "غيّر نبض القلب، ثم اضغط «تتبّع خلية دم».",
-    "code": "var Cc=kit.circulation({});\nvar p=Cc.points;\naddLabel('القلب',p.heart[0],p.heart[1],p.heart[2]);\naddLabel('الرئة',p.lungL[0],p.lungL[1],p.lungL[2]);\naddLabel('الرئة',p.lungR[0],p.lungR[1],p.lungR[2]);\naddLabel('خلايا الجسم',p.body[0]+1.9,p.body[1]+.3,p.body[2]);\naddLabel('شريان',p.artery[0]+.3,p.artery[1],p.artery[2]);\naddLabel('وريد',p.vein[0]-.3,p.vein[1],p.vein[2]);\naddLabel('شعيرات دموية',p.capLung[0],p.capLung[1],p.capLung[2]);\nkit.view(0,2.1,11,0,1.75,0);\nui.slider('نبض القلب',50,150,72,1,'نبضة/د',function(v){Cc.setRate(v)});\nui.button('تتبّع خلية دم 🔴',Cc.follow);\nui.result('الأحمر: دم مؤكسج · الأزرق: دم غير مؤكسج');"
+    "caption": "مثل رسمة الكتاب: اضغط الأرقام ١ ← ٤ لتضيء كل مرحلة، أو «تتبّع خلية دم» لتتابعها في الدورة كاملة. الأحمر مؤكسج والأزرق غير مؤكسج.",
+    "code": "var B=kit.bloodCycle({});\nui.button('١',function(){B.step(1)});\nui.button('٢',function(){B.step(2)});\nui.button('٣',function(){B.step(3)});\nui.button('٤',function(){B.step(4)});\nui.button('تتبّع خلية دم 🔴',B.follow);\nui.slider('نبض القلب',50,150,72,1,'نبضة/د',function(v){B.setRate(v)});\nui.result('اضغط رقم المرحلة أو تتبّع خلية دم');"
    },
    {
     "slide_index": 24,
     "title": "ثابتة أم متغيرة درجة الحرارة؟",
     "caption": "حرّك منزلق حرارة الجو: ميزان السحلية يتغيّر معه، وميزان الطائر يبقى ثابتاً.",
     "code": "var T=kit.thermo({});\nui.slider('حرارة الجو',0,45,25,1,'°',function(v){T.set(v)});"
+   },
+   {
+    "slide_index": 22,
+    "title": "السمكة: دوران مغلق",
+    "caption": "الدم في السمكة يمر دورة واحدة داخل الأوعية: القلب ← الخياشيم ← الجسم ← القلب.",
+    "code": "var O=kit.openClosed2({});O.show('closed');\nui.button('الخطوة التالية ▶',O.next);\nui.button('قارن مع الجرادة 🦗',function(){O.show('open')});\nui.button('السمكة 🐟',function(){O.show('closed')});"
    }
   ],
   "figures": [
@@ -1441,11 +1447,6 @@
     "slide_index": 21,
     "caption": "إسفنج وجراد وسمكة وقطة: أنواع مختلفة من الدوران",
     "src": "../lessons/img/animals.jpg"
-   },
-   {
-    "slide_index": 23,
-    "caption": "الدوران والتنفس: مسار الدم بين القلب والرئتين والجسم",
-    "src": "../lessons/img/circulation.jpg"
    }
   ],
   "sections": [

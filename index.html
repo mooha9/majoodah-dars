@@ -116,7 +116,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 
 <div class="card" id="topup">
  <h2 style="font-size:19px">شحن الرصيد</h2>
- <p class="note" style="margin:4px 0 6px">الباقات: <b>٢٠ صفحة بـ٨٠ ريال</b> (٤ للصفحة) · <b>٣٠ صفحة بـ١٠٥</b> (٣٫٥) · <b>٥٠ صفحة بـ١٥٠</b> (٣) · <b>١٠٠ صفحة بـ٢٠٠</b> (٢ للصفحة).</p><p class="note" style="margin:0 0 10px">بعد الشراء يوصلك كود الباقة في رسالة الطلب. الصق الرسالة كاملة هنا وتنضاف صفحات الباقة كلها.</p>
+ <p class="note" style="margin:4px 0 6px">الباقات: <a href="https://majoodah.com/ai-interactive-lesson-20/p83386105" target="_blank" rel="noopener"><b>٢٠ صفحة بـ٨٠ ريال</b></a> (٤ للصفحة) · <a href="https://majoodah.com/ai-interactive-lesson-30/p1988042712" target="_blank" rel="noopener"><b>٣٠ صفحة بـ١٠٥</b></a> (٣٫٥) · <a href="https://majoodah.com/ai-interactive-lesson-50/p304176602" target="_blank" rel="noopener"><b>٥٠ صفحة بـ١٥٠</b></a> (٣) · <a href="https://majoodah.com/ai-interactive-lesson-100/p446341677" target="_blank" rel="noopener"><b>١٠٠ صفحة بـ٢٠٠</b></a> (٢ للصفحة).</p><p class="note" style="margin:0 0 10px">بعد الشراء يوصلك كود الباقة في رسالة الطلب. الصق الرسالة كاملة هنا وتنضاف صفحات الباقة كلها.</p>
  <div class="f"><textarea id="codes" style="min-height:90px" placeholder="DRS-XXXX-XXXX"></textarea></div>
  <div class="go" style="margin-top:10px"><button class="btn primary" id="redeem">أضف للرصيد</button><a class="btn" id="buy" href="https://majoodah.com" target="_blank" rel="noopener">اشترِ صفحات ↗</a></div>
  <p class="msg" id="redMsg"></p>
@@ -142,7 +142,7 @@ select{-webkit-appearance:none;appearance:none;background-image:url("data:image/
 (function(){
 "use strict";
 var API=(new URLSearchParams(location.search).get("api")||"https://rsvp.majoodah.com")+"/api/dars";
-var BUY="https://majoodah.com/ai-interactive-lesson/p1010319420";
+var BUY="https://majoodah.com/ai-interactive-lesson-20/p83386105";
 var AQ=new URLSearchParams(location.search).get("api")?"&api="+encodeURIComponent(new URLSearchParams(location.search).get("api")):"";
 var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 var AN=function(n){return String(n).replace(/\d/g,function(c){return "٠١٢٣٤٥٦٧٨٩"[c]})};
